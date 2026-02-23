@@ -9,7 +9,7 @@ permissions:
   packages: write
 
 jobs:
-  build_push_frontend:
+  build_push_images:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,8 +34,18 @@ jobs:
             ghcr.io/${{ env.IMAGE_OWNER }}/securenet-frontend:latest
             ghcr.io/${{ env.IMAGE_OWNER }}/securenet-frontend:${{ github.sha }}
 
+      - name: Build & push api image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/api/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/securenet-api:latest
+            ghcr.io/${{ env.IMAGE_OWNER }}/securenet-api:${{ github.sha }}
+
   deploy_on_server:
-    needs: build_push_frontend
+    needs: build_push_images
     runs-on: [self-hosted, Linux, X64]
     steps:
       - name: Pull and restart services
