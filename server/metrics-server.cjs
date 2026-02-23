@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 
 const PORT = process.env.METRICS_PORT || 3001;
-const NETDATA_URL = process.env.NETDATA_URL || "http://127.0.0.1:19999";
+const NETDATA_URL = process.env.NETDATA_URL || "http://0.0.0.0:19999";
 
 async function fetchJSON(url) {
   const r = await fetch(url);
@@ -119,7 +119,7 @@ app.get("/api/metrics", async (_req, res) => {
   }
 });
 
-app.listen(PORT, "127.0.0.1", () => {
-  console.log(`metrics-server escuchando en http://127.0.0.1:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`metrics-server escuchando en http://0.0.0.0:${PORT}`);
   console.log(`NETDATA_URL=${NETDATA_URL}`);
 });
