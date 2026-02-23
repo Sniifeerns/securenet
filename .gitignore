@@ -28,3 +28,7 @@ dist-ssr
 *.sw?
 
 .env
+node_modules/
+dist/
+docker/gateway/certs/
+*.log
