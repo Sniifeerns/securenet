@@ -14,11 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set lowercase owner
+        run: echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
       - name: Build & push frontend image
         uses: docker/build-push-action@v6
         with:
@@ -26,8 +31,8 @@ jobs:
           file: docker/frontend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/securenet-frontend:latest
-            ghcr.io/${{ github.repository_owner }}/securenet-frontend:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/securenet-frontend:latest
+            ghcr.io/${{ env.IMAGE_OWNER }}/securenet-frontend:${{ github.sha }}
 
   deploy_on_server:
     needs: build_push_frontend
