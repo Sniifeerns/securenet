@@ -1,0 +1,42 @@
+name: Build & Deploy (Self-hosted)
+
+on:
+  push:
+    branches: ["master"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build_push_frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/frontend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/securenet-frontend:latest
+            ghcr.io/${{ github.repository_owner }}/securenet-frontend:${{ github.sha }}
+
+  deploy_on_server:
+    needs: build_push_frontend
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      - name: Pull and restart services
+        run: |
+          set -e
+          cd /home/profesoraso/securenet-deploy
+          docker compose pull
+          docker compose up -d
+          docker image prune -f
