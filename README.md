@@ -31,7 +31,6 @@ Se ha construido un laboratorio funcional con segmentación por VLAN, DMZ proteg
 - Implementar **DHCP con failover**.
 - Desplegar servicios de automatización con **n8n**.
 - Integrar monitorización en tiempo real con **Netdata + API propia**.
-- **Containerizar y automatizar despliegues (Docker + CI/CD)**.
 
 ---
 
@@ -56,27 +55,6 @@ Se ha construido un laboratorio funcional con segmentación por VLAN, DMZ proteg
 
 ---
 
-## 🛡️ Seguridad adicional (Reverse Proxy + CI/CD)
-
-Además de la segmentación y ACLs, se reforzó la seguridad a nivel de publicación y despliegue:
-
-### Reverse Proxy como punto único de entrada
-- La infraestructura publica servicios únicamente a través de un **Gateway (Reverse Proxy)**.
-- Se centraliza el control de:
-  - **TLS/HTTPS**
-  - **Redirección HTTP → HTTPS**
-  - **Rutas publicadas** (`/`, `/api/*`)
-  - **Cabeceras de proxy** (Forwarded-For / Proto)
-- Esto evita exponer servicios internos directamente y reduce superficie de ataque.
-
-### CI/CD (automatización segura)
-- Los despliegues se automatizan con **GitHub Actions**.
-- Se reduce el riesgo de errores manuales (subidas de `dist`, permisos, configuraciones inconsistentes).
-- Se asegura trazabilidad: cada despliegue está asociado a un commit y un run en Actions.
-- En DMZ/VPN se utiliza un **runner self-hosted** para no abrir SSH al exterior.
-
----
-
 ## 🛠 Herramientas y Tecnologías Utilizadas
 
 ### Infraestructura de red
@@ -90,13 +68,12 @@ Además de la segmentación y ACLs, se reforzó la seguridad a nivel de publicac
 
 ### Servidores y servicios
 - Ubuntu Server
-- Apache2 *(fase inicial; reemplazado por Gateway Nginx en Docker para publicación)*
+- Apache2
 - DHCP (ISC DHCP Server con Failover)
 - n8n (automatización)
 - Netdata (monitorización)
 - Node.js + Express (API de métricas)
 - SSH seguro
-- Docker + Docker Compose
 
 ### Desarrollo web
 - React + Vite
@@ -129,7 +106,7 @@ Además de la segmentación y ACLs, se reforzó la seguridad a nivel de publicac
 
 Se implementó monitorización en tiempo real con esta arquitectura:
 
-**Frontend React** → `https://<host>/api/metrics` → **Reverse Proxy (Gateway Nginx)** → **Metrics API** → **Netdata (host)**
+**Frontend React** → `https://<host>/api/metrics` → **Apache ProxyPass** → `http://127.0.0.1:3001/api/metrics` → **Netdata** `127.0.0.1:19999`
 
 ### Endpoints
 - `GET /api/health`
@@ -145,97 +122,38 @@ Se implementó monitorización en tiempo real con esta arquitectura:
 
 ---
 
-## 🐳 Despliegue Docker + HTTPS (Gateway) + CI/CD (nuevo)
+## 🚀 Despliegue del frontend
 
-A partir de esta fase, el despliegue evolucionó a un modelo **containerizado** con **Docker Compose**, centralizando la publicación en un **Gateway Nginx** que gestiona **HTTPS** y la redirección **HTTP → HTTPS**. Además, se integró un flujo **CI/CD** con GitHub Actions para automatizar despliegues.
-
-### 🧱 Servicios (Docker Compose)
-- **gateway** (Nginx): entrada única al sistema (**80/443**), redirección 80→443, reverse proxy.
-- **frontend**: web React (build) servida por Nginx dentro del contenedor.
-- **api**: Node.js + Express (`/api/health`, `/api/metrics`) containerizado.
-- **netdata**: en producción se mantiene **en el host** (sin Docker) para medir métricas reales del servidor.
-
-### 🔐 HTTPS y redirección 80 → 443
-El gateway expone:
-- `http://<host>` → **301** a `https://<host>`
-- `https://<host>` → frontend
-- `https://<host>/api/*` → API de métricas
-
-> En el servidor se usa certificado **autofirmado** (el navegador mostrará aviso de confianza).
-
-### 📦 Producción: imágenes desde GHCR (GitHub Container Registry)
-En producción, el servidor **no compila** el proyecto: consume imágenes publicadas en GHCR:
-
-- `ghcr.io/<owner>/securenet-frontend:latest`
-- `ghcr.io/<owner>/securenet-api:latest`
-
-> Nota: GHCR requiere el owner en **minúsculas**, por eso el workflow fuerza `IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,}`.
-
-### 🔁 CI/CD con GitHub Actions + Runner self-hosted (DMZ/VPN)
-Como el servidor está accesible por VPN (Tailscale), GitHub Actions (runner cloud) **no puede** acceder directamente a la IP privada `100.115.248.23`.  
-Solución: se configuró un **runner self-hosted** dentro del servidor/DMZ.
-
-Pipeline:
-1) **Build + Push** de imágenes Docker a GHCR (runner cloud).
-2) **Deploy** automático en el servidor (runner self-hosted):
-   - `docker compose pull`
-   - `docker compose up -d`
-
-### 🧪 Verificación rápida (Docker)
-
+### Local
 ```bash
-# Ver contenedores
-docker compose ps
-
-# Comprobar HTTPS y endpoints
-curl -k https://<host>/api/health
-curl -k https://<host>/api/metrics
-
-# Comprobar redirección HTTP→HTTPS
-curl -I http://<host>
+npm install
+npm run dev
 ```
 
-### 🧯 Incidencias reales resueltas (Docker/CI)
+### Build producción
+```bash
+npm run build
+```
 
-- **Nginx frontend**: `http directive is not allowed here` por incluir `http {}` en `default.conf`.  
-  ✅ Solución: dejar solo el bloque `server {}` en la configuración del sitio.
-- **Proxy `/api`**: rutas rotas por `proxy_pass` con `/` final.  
-  ✅ Solución: ajustar `proxy_pass` para conservar `/api/...` correctamente.
-- **GHCR**: fallo por *namespace* en mayúsculas.  
-  ✅ Solución: forzar el `owner` en minúsculas (`${GITHUB_REPOSITORY_OWNER,,}`).
-- **Runner self-hosted**: `permission denied` en `/var/run/docker.sock`.  
-  ✅ Solución: añadir el usuario del runner al grupo `docker` y reiniciar sesión/servicio.
-- **Migración final**: conflicto de puertos 80/443 entre Apache y Gateway.  
-  ✅ Solución: retirar Apache y dejar solo el Gateway Nginx escuchando en 80/443.
+### Publicación en servidor
+```bash
+cp -r dist/* /var/www/...
+```
 
-### 📸 Dónde poner capturas (opcional pero recomendado)
+### Configurar VirtualHost SSL
 
-- **GitHub Actions** con el *run* en verde (build/push + deploy self-hosted).
-- `docker compose ps` mostrando `gateway`, `frontend`, `api` en estado **Up**.
-- `curl -I http://<host>` mostrando `301 Location: https://...`.
-- `curl -k https://<host>/api/metrics` devolviendo JSON válido.
+- VirtualHost HTTPS en Apache apuntando a `/var/www/...`
 
-### 🚀 Despliegue del frontend (fase inicial, sin Docker)
+### Configurar ProxyPass de `/api` al servidor Node local
 
-1. **Local**
-   - `npm install`
-   - `npm run dev`
-2. **Build producción**
-   - `npm run build`
-3. **Publicación en servidor**
-   - `cp -r dist/* /var/www/...`
-4. **Configurar VirtualHost SSL (Apache)**
-   - VirtualHost HTTPS apuntando a `/var/www/...`
-   - Configurar `ProxyPass` de `/api` al servidor Node local.
-
-Ejemplo de configuración de proxy en Apache:
+Ejemplo:
 
 ```apache
 ProxyPass /api http://127.0.0.1:3001/api
 ProxyPassReverse /api http://127.0.0.1:3001/api
 ```
 
-Recargar Apache:
+### Recargar Apache
 
 ```bash
 sudo systemctl reload apache2
@@ -243,73 +161,88 @@ sudo systemctl reload apache2
 
 ### ⚙️ Variables de entorno
 
-- **Desarrollo** (`.env`):
+#### Desarrollo (`.env`)
 
-  ```env
-  VITE_METRICS_API=http://127.0.0.1:3001/api
-  ```
+```bash
+VITE_METRICS_API=http://127.0.0.1:3001/api
+```
 
-- **Producción** (`.env.production`):
+#### Producción (`.env.production`)
 
-  ```env
-  VITE_METRICS_API=/api
-  ```
+```bash
+VITE_METRICS_API=/api
+```
 
-> Importante: en producción no usar `127.0.0.1` desde el navegador del cliente; el acceso debe hacerse siempre a través del proxy `/api` del servidor.
+> Importante: en producción no usar 127.0.0.1 desde frontend del cliente; debe resolverse por proxy `/api`.
 
-### 🧪 Verificaciones útiles
+---
 
-- **Backend de métricas (directo al Node local)**:
+## 🧪 Verificaciones útiles
 
-  ```bash
-  curl -s http://127.0.0.1:3001/api/health
-  curl -s http://127.0.0.1:3001/api/metrics
-  ```
+### Backend de métricas
 
-- **Proxy HTTPS (Gateway / Apache)**:
+```bash
+curl -s http://127.0.0.1:3001/api/health
+curl -s http://127.0.0.1:3001/api/metrics
+```
 
-  ```bash
-  curl -k https://127.0.0.1/api/health
-  curl -k https://127.0.0.1/api/metrics
-  ```
+### Proxy HTTPS (Apache)
 
-- **Diagnóstico frontend**:
-  - Abrir **DevTools > Network**.
-  - Confirmar que hay petición a `/api/metrics`.
-  - Evitar errores tipo `/api/api/metrics` en la URL.
-  - Hacer *hard refresh* (`Ctrl + Shift + R`) tras cada despliegue.
+```bash
+curl -k https://127.0.0.1/api/health
+curl -k https://127.0.0.1/api/metrics
+```
 
-### 🧯 Incidencias reales resueltas (general)
+### Diagnóstico frontend
 
-- `Failed to fetch` por ruta incorrecta o *build* antiguo en caché.
-- `Unexpected token '<'` al recibir HTML (404) en vez de JSON en `/api/metrics`.
-- `Mismatching encryption keys` en **n8n** por clave distinta en volumen/config.
-- Errores de permisos al subir *build* por SCP.
+- DevTools > Network
+  - Confirmar request a `/api/metrics`
+  - Evitar errores tipo `/api/api/metrics`
+- Hard refresh (`Ctrl + Shift + R`) tras cada despliegue
+
+---
+
+## 🧯 Incidencias reales resueltas
+
+- `Failed to fetch` por ruta incorrecta o build antiguo en caché.
+- `Unexpected token '<'` al recibir HTML (404) en vez de JSON.
+- `Mismatching encryption keys` en n8n por clave distinta en volumen/config.
+- Errores de permisos al subir build por SCP.
 - Cálculo de CPU fijo (0 o 100) por parseo incorrecto de labels Netdata.
+
+---
 
 ## 🏫 Contexto Académico
 
 Proyecto desarrollado durante el curso **2025–2026** en:
 
-- 🎓 **IES Gregorio Prieto**
-- Ciclo Formativo de Grado Superior: **Administración de Sistemas Informáticos en Red (2º ASIR)**
+> 🎓 **IES Gregorio Prieto**  
+> Ciclo Formativo de Grado Superior  
+> Administración de Sistemas Informáticos en Red (2º ASIR)
 
 Este proyecto forma parte del enfoque de innovación tecnológica aplicado a entornos reales de infraestructura y seguridad.
+
+---
 
 ## 👥 Integrantes – Grupo B
 
 - **Tania Morales**  
-  [LinkedIn](https://www.linkedin.com/in/tania-morales-sánchez-348615164)
+  `https://www.linkedin.com/in/tania-morales-sánchez-348615164`
+
 - **Javier Naranjo**  
-  [LinkedIn](https://www.linkedin.com/in/javier-naranjo-simarro-67325a356)
+  `https://www.linkedin.com/in/javier-naranjo-simarro-67325a356`
+
 - **Adrián Delgado**  
-  [LinkedIn](https://www.linkedin.com/in/adrian-delgado-campos-b025333ab)
+  `https://www.linkedin.com/in/adrian-delgado-campos-b025333ab`
+
 - **Martín Labrador**  
-  [Instagram](https://www.instagram.com/_martinlabrador_)
+  `https://www.instagram.com/_martinlabrador_`
+
+---
 
 ## 🚀 Impacto del Proyecto
 
-**SecureNet Lab** no solo es un laboratorio académico, sino una simulación realista de:
+SecureNet Lab no solo es un laboratorio académico, sino una simulación realista de:
 
 - Infraestructura empresarial
 - Segmentación segura
@@ -319,31 +252,26 @@ Este proyecto forma parte del enfoque de innovación tecnológica aplicado a ent
 
 Demuestra la capacidad de diseñar, implementar y asegurar entornos de red complejos aplicando conocimientos de:
 
-- Networking
-- Seguridad
-- Sistemas Linux
-- Automatización
-- Despliegue web
-- Observabilidad
+Noticia publicada:  
+`https://somosdelprieto.com/index.php/2025/11/27/trabajando-en-el-proyecto-securenet-lab/`
 
-📄 Noticia publicada sobre el proyecto:
-
-- [Trabajando en el proyecto SecureNet Lab](https://somosdelprieto.com/index.php/2025/11/27/trabajando-en-el-proyecto-securenet-lab/)
+---
 
 ## ✅ Estado actual
 
-- ✅ Infraestructura segmentada operativa
-- ✅ DMZ aislada con políticas de acceso
-- ✅ Web desplegada con HTTPS
-- ✅ Monitorización en tiempo real funcional
-- ✅ Acceso remoto por VPN
-- ✅ Servicios de automatización desplegados
-- ✅ DHCP con failover en laboratorio
-- ✅ Despliegue Docker con reverse proxy y CI/CD
+✅ Infraestructura segmentada operativa  
+✅ DMZ aislada con políticas de acceso  
+✅ Web desplegada con HTTPS  
+✅ Monitorización en tiempo real funcional  
+✅ Acceso remoto por VPN  
+✅ Servicios de automatización desplegados  
+✅ DHCP con failover en laboratorio  
+
+---
 
 ## 📢 Proyecto de Innovación
 
-**SecureNet Lab** representa una implementación práctica y profesional de redes seguras en un entorno académico, integrando conocimientos de:
+SecureNet Lab representa una implementación práctica y profesional de redes seguras en un entorno académico, integrando conocimientos de:
 
 - Networking
 - Seguridad
@@ -352,4 +280,6 @@ Demuestra la capacidad de diseñar, implementar y asegurar entornos de red compl
 - Despliegue web
 - Observabilidad
 
-SecureNet Lab – Grupo B – Proyecto de Innovación 2026
+---
+
+**SecureNet Lab – Grupo B – Proyecto de Innovación 2026**
