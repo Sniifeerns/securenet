@@ -14,6 +14,14 @@ async function fetchJSON(url) {
   return r.json();
 }
 
+async function tryFetchJSON(url) {
+  try {
+    return await fetchJSON(url);
+  } catch (_e) {
+    return null;
+  }
+}
+
 function normalizeSeries(json) {
   const labelsRaw = (json?.labels ?? []).map((x) => String(x).toLowerCase().trim());
   const rowRaw = json?.data?.[0] ?? [];
@@ -30,6 +38,35 @@ function pickByNames(labels, row, names) {
     const idx = labels.findIndex((x) => x.includes(n));
     if (idx >= 0) return Number(row[idx] ?? 0);
   }
+  return null;
+}
+
+async function fetchNetSeries() {
+  const candidates = [
+    "system.net",
+    "system.ipv4",
+    "net.eth0",
+    "net.enp0s3",
+    "net.ens18",
+    "net.enp0s8",
+  ];
+
+  for (const chart of candidates) {
+    const url = `${NETDATA_URL}/api/v1/data?chart=${chart}&format=json&points=1&after=-1`;
+    const data = await tryFetchJSON(url);
+    if (data?.data?.length) return normalizeSeries(data);
+  }
+
+  const chartsJson = await tryFetchJSON(`${NETDATA_URL}/api/v1/charts`);
+  const chartNames = Object.keys(chartsJson?.charts ?? {});
+  const ifaceChart = chartNames.find((name) => /^net\./.test(name));
+
+  if (ifaceChart) {
+    const url = `${NETDATA_URL}/api/v1/data?chart=${ifaceChart}&format=json&points=1&after=-1`;
+    const data = await tryFetchJSON(url);
+    if (data?.data?.length) return normalizeSeries(data);
+  }
+
   return null;
 }
 
@@ -88,19 +125,20 @@ app.get("/api/metrics", async (_req, res) => {
     // =========================
     // NET
     // =========================
-    const netUrl = `${NETDATA_URL}/api/v1/data?chart=system.net&format=json&points=1&after=-1`;
-    const netJson = await fetchJSON(netUrl);
-    const netSeries = normalizeSeries(netJson);
+    let netInBps = 0;
+    let netOutBps = 0;
+    const netSeries = await fetchNetSeries();
 
-    let netInBps = pickByNames(netSeries.labels, netSeries.row, ["received", "recv", "in"]);
-    let netOutBps = pickByNames(netSeries.labels, netSeries.row, ["sent", "out", "tx"]);
+    if (netSeries) {
+      netInBps = pickByNames(netSeries.labels, netSeries.row, ["received", "recv", "in", "rx"]);
+      netOutBps = pickByNames(netSeries.labels, netSeries.row, ["sent", "out", "tx"]);
 
-    // fallback
-    if (netInBps === null) netInBps = Number(netSeries.row[0] ?? 0);
-    if (netOutBps === null) netOutBps = Number(netSeries.row[1] ?? 0);
+      if (netInBps === null) netInBps = Number(netSeries.row[0] ?? 0);
+      if (netOutBps === null) netOutBps = Number(netSeries.row[1] ?? 0);
 
-    netInBps = Math.abs(netInBps);
-    netOutBps = Math.abs(netOutBps);
+      netInBps = Math.abs(netInBps);
+      netOutBps = Math.abs(netOutBps);
+    }
 
     res.json({
       ok: true,
@@ -109,6 +147,7 @@ app.get("/api/metrics", async (_req, res) => {
       netInBps: Number(netInBps.toFixed(6)),
       netOutBps: Number(netOutBps.toFixed(6)),
       threats: 0,
+      netDataAvailable: Boolean(netSeries),
       updatedAt: new Date().toISOString(),
     });
   } catch (e) {
