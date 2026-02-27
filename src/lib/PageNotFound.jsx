@@ -1,11 +1,11 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ShieldAlert, Home, ArrowLeft } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
 
 export default function PageNotFound() {
   const location = useLocation();
+  const navigate = useNavigate();
   const pageName = location.pathname.substring(1);
   const displayPath = pageName ? `/${pageName}` : '/';
 
@@ -35,16 +35,16 @@ export default function PageNotFound() {
       />
 
       <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-blue-500/20 rounded-full blur-[110px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/20 rounded-full blur-[110px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/20 rounded-full blur-[110px]" />
 
       <div className="relative z-10 w-full max-w-2xl">
         <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 backdrop-blur-md p-8 md:p-10 text-center shadow-2xl shadow-blue-900/20">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 mb-6">
             <ShieldAlert className="w-4 h-4 text-cyan-300" />
-            <span className="text-sm text-blue-200">Error de navegación</span>
+            <span className="text-sm text-blue-200">Error 404</span>
           </div>
 
-          <h1 className="text-6xl md:text-7xl font-bold tracking-tight mb-3 bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-6xl md:text-7xl font-bold tracking-tight mb-3 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
             404
           </h1>
 
@@ -58,31 +58,32 @@ export default function PageNotFound() {
           </p>
 
           {isFetched && authData?.isAuthenticated && authData?.user?.role === 'admin' && (
-            <div className="mb-8 text-left rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-              <p className="text-sm font-semibold text-amber-200 mb-1">Nota para admin</p>
-              <p className="text-sm text-amber-100/90">
-                Esta ruta puede no estar implementada todavía. Si corresponde, solicítala en el chat para agregarla.
+            <div className="mb-8 text-left rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+              <p className="text-sm font-semibold text-cyan-200 mb-1">Nota para admin</p>
+              <p className="text-sm text-cyan-100/90">
+                Esta ruta puede no estar implementada todavia. Si aplica, revisa el enrutado en pages.config.
               </p>
             </div>
           )}
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button
-              onClick={() => (window.location.href = '/')}
-              className="w-full sm:w-auto px-6 py-5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-xl"
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-xl font-medium shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-colors"
             >
               <Home className="w-4 h-4 mr-2" />
               Volver al inicio
-            </Button>
+            </button>
 
-            <Button
-              variant="outline"
-              onClick={() => window.history.back()}
-              className="w-full sm:w-auto px-6 py-5 border-slate-700 bg-transparent hover:bg-slate-800 text-slate-100 rounded-xl"
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-5 border-2 border-gray-700 hover:border-cyan-500/50 bg-transparent hover:bg-cyan-500/10 text-gray-300 hover:text-white rounded-xl font-medium transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Regresar
-            </Button>
+            </button>
           </div>
         </div>
       </div>
