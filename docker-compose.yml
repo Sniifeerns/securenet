@@ -1,0 +1,56 @@
+services:
+  gateway:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/gateway/certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - api
+      - netdata
+    networks:
+      - dmz
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/frontend/Dockerfile
+    networks:
+      - dmz
+
+  api:
+    build:
+      context: .
+      dockerfile: ./docker/api/Dockerfile
+    environment:
+      - NETDATA_URL=http://netdata:19999
+      - PORT=3001
+    networks:
+      - dmz
+
+  netdata:
+    image: netdata/netdata:stable
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock.ro
+      
+    networks:
+      - dmz
+  
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./docker/n8n/data:/home/node/.n8n
+    networks:
+      - dmz
+
+networks:
+  dmz:
+    driver: bridge

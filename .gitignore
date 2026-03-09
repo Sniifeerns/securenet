@@ -1,0 +1,4 @@
+privkey.pem
+.env
+terraform/.terraform
+terraform/terraform.tfstate
