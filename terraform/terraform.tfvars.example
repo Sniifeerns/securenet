@@ -1,0 +1,8 @@
+environment = "dev"
+
+aws_region = "eu-west-3"
+oci_region = "eu-madrid-1"
+oci_compartment_id = "ocid1.tenancy.oc1..REPLACE_WITH_YOUR_TENANCY_OCID"
+oci_image_id = "ocid1.image.oc1.eu-madrid-1.REPLACE_WITH_YOUR_IMAGE_OCID"
+oci_availability_domain = "REPLACE_WITH_YOUR_AVAILABILITY_DOMAIN"
+oci_subnet_id = "ocid1.subnet.oc1.eu-madrid-1.REPLACE_WITH_YOUR_SUBNET_OCID"
