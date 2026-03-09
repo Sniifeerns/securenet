@@ -3,7 +3,8 @@
 **Proyecto de Innovación - Grupo B**  
 **2º ASIR - IES Gregorio Prieto**
 
-> **📘 Repositorio público de portfolio** - Este repo contiene el código fuente limpio del proyecto, sin claves privadas ni credenciales. Para desarrollo, ver [REPO-STRATEGY.md](REPO-STRATEGY.md).
+> **📘 Repositorio público de portfolio** - Este repo contiene el código fuente limpio del proyecto, sin claves privadas ni credenciales.  
+> 🚀 **[Guía de configuración rápida →](SETUP-GUIDE.md)**
 
 ---
 
@@ -419,8 +420,9 @@ chmod +x .git/hooks/pre-commit
 
 ## 📚 Documentación adicional
 
-- [SECURITY.md](SECURITY.md) - Configuración de seguridad y archivos sensibles
-- [REPO-STRATEGY.md](REPO-STRATEGY.md) - Estrategia de repositorios (público + privado)
+- **[SETUP-GUIDE.md](SETUP-GUIDE.md)** - 🚀 Guía paso a paso para configurar repos público/privado
+- **[SECURITY.md](SECURITY.md)** - 🔒 Configuración de seguridad y archivos sensibles
+- **[REPO-STRATEGY.md](REPO-STRATEGY.md)** - 📋 Estrategia detallada de repositorios
 
 ---
 
