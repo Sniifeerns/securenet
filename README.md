@@ -3,6 +3,8 @@
 **Proyecto de Innovación - Grupo B**  
 **2º ASIR - IES Gregorio Prieto**
 
+> **📘 Repositorio público de portfolio** - Este repo contiene el código fuente limpio del proyecto, sin claves privadas ni credenciales. Para desarrollo, ver [REPO-STRATEGY.md](REPO-STRATEGY.md).
+
 ---
 
 ## 📌 Descripción del proyecto
@@ -375,3 +377,60 @@ https://somosdelprieto.com/index.php/2025/11/27/trabajando-en-el-proyecto-secure
 SecureNet Lab integra de forma práctica conocimientos de redes, seguridad, sistemas y despliegue moderno en un entorno académico con enfoque profesional.
 
 **SecureNet Lab - Grupo B - Proyecto de Innovación 2026**
+
+---
+
+## 🔧 Configuración para desarrollo local
+
+Este repositorio **no contiene** claves privadas, certificados ni credenciales. Para trabajar localmente:
+
+### 1. Instalar dependencias
+```bash
+npm install
+```
+
+### 2. Configurar variables de entorno
+```bash
+cp .env.example .env
+# Edita .env con tus valores
+```
+
+### 3. Generar certificados SSL para desarrollo
+```bash
+bash scripts/generate-certs.sh
+```
+
+### 4. Configurar Terraform (opcional)
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edita terraform.tfvars con tus IDs de cloud
+```
+
+### 5. Instalar protección pre-commit
+```bash
+cp scripts/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+📖 **Más información**: Ver [SECURITY.md](SECURITY.md) y [REPO-STRATEGY.md](REPO-STRATEGY.md)
+
+---
+
+## 📚 Documentación adicional
+
+- [SECURITY.md](SECURITY.md) - Configuración de seguridad y archivos sensibles
+- [REPO-STRATEGY.md](REPO-STRATEGY.md) - Estrategia de repositorios (público + privado)
+
+---
+
+## ⚠️ Nota de seguridad
+
+Este repo es **público** y contiene solo código fuente limpio. NO contiene:
+- Claves privadas (`.pem`, `.key`)
+- Certificados SSL reales
+- Variables de entorno con credenciales (`.env`)
+- Configuraciones de infraestructura con IDs reales (`terraform.tfvars`)
+- Estado de Terraform (`*.tfstate`)
+
+Para deploy o desarrollo, configura estos archivos localmente usando las plantillas `.example`.
