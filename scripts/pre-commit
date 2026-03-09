@@ -1,0 +1,85 @@
+#!/bin/bash
+# ========================
+# Pre-commit hook: Detecta secretos antes de commitear
+# ========================
+# Instalación: cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo "Comprobando archivos sensibles..."
+
+# Patrones de archivos prohibidos
+FORBIDDEN_PATTERNS=(
+    '\.pem$'
+    '\.key$'
+    '\.p12$'
+    '\.pfx$'
+    '\.jks$'
+    '\.keystore$'
+    'tfstate'
+    '\.tfvars$'
+    '\.env$'
+    'id_rsa'
+    'id_ed25519'
+)
+
+# Patrones de contenido prohibido
+SECRET_PATTERNS=(
+    'PRIVATE KEY'
+    'BEGIN RSA'
+    'BEGIN EC PRIVATE'
+    'BEGIN DSA PRIVATE'
+    'password\s*=\s*["\x27][^"\x27]+'
+    'secret\s*=\s*["\x27][^"\x27]+'
+    'api_key\s*=\s*["\x27][^"\x27]+'
+    'access_token\s*=\s*["\x27][^"\x27]+'
+    'AWS_SECRET_ACCESS_KEY'
+    'AKIA[0-9A-Z]{16}'
+)
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+FOUND_ISSUES=0
+
+# Comprobar nombres de archivos
+for file in $STAGED_FILES; do
+    for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
+        if echo "$file" | grep -qE "$pattern"; then
+            echo -e "${RED}BLOQUEADO:${NC} Archivo sensible detectado: ${YELLOW}$file${NC}"
+            FOUND_ISSUES=1
+        fi
+    done
+done
+
+# Comprobar contenido de archivos
+for file in $STAGED_FILES; do
+    if [ -f "$file" ] && file "$file" | grep -q "text"; then
+        for pattern in "${SECRET_PATTERNS[@]}"; do
+            if grep -qE "$pattern" "$file" 2>/dev/null; then
+                echo -e "${RED}BLOQUEADO:${NC} Posible secreto en ${YELLOW}$file${NC} (patrón: $pattern)"
+                FOUND_ISSUES=1
+            fi
+        done
+    fi
+done
+
+# Comprobar node_modules
+for file in $STAGED_FILES; do
+    if echo "$file" | grep -q "node_modules"; then
+        echo -e "${RED}BLOQUEADO:${NC} No se debe commitear node_modules: ${YELLOW}$file${NC}"
+        FOUND_ISSUES=1
+        break
+    fi
+done
+
+if [ $FOUND_ISSUES -ne 0 ]; then
+    echo ""
+    echo -e "${RED}COMMIT RECHAZADO: Se encontraron archivos sensibles o secretos.${NC}"
+    echo "Revisa los archivos y elimínalos del staging con: git reset HEAD <archivo>"
+    echo "Si estás seguro, usa: git commit --no-verify"
+    exit 1
+fi
+
+echo -e "Comprobación de seguridad superada."
+exit 0

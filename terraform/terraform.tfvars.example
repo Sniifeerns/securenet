@@ -1,0 +1,16 @@
+# ========================
+# SECURENET - Variables de Terraform
+# ========================
+# Copia este archivo como terraform.tfvars y rellena con tus valores reales.
+# NUNCA subas terraform.tfvars al repositorio.
+
+environment = "dev"
+
+aws_region = "eu-west-3"
+oci_region = "eu-madrid-1"
+
+# OCI - Reemplaza con tus IDs reales
+oci_compartment_id      = "ocid1.tenancy.oc1..TU_COMPARTMENT_ID"
+oci_image_id            = "ocid1.image.oc1.eu-madrid-1.TU_IMAGE_ID"
+oci_availability_domain = "TU_AVAILABILITY_DOMAIN"
+oci_subnet_id           = "ocid1.subnet.oc1.eu-madrid-1.TU_SUBNET_ID"
