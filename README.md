@@ -4,7 +4,7 @@
 **2º ASIR - IES Gregorio Prieto**
 
 > **📘 Repositorio público de portfolio** - Este repo contiene el código fuente limpio del proyecto, sin claves privadas ni credenciales.  
-> 🚀 **[Guía de configuración rápida →](SETUP-GUIDE.md)**
+> 🚀 **[Guía de configuración rápida →](docs/repository/SETUP-GUIDE.md)**
 
 ---
 
@@ -36,6 +36,23 @@ Se ha construido un laboratorio funcional con segmentación por VLAN, DMZ proteg
 - Desplegar servicios de automatización con **n8n**.
 - Integrar monitorización en tiempo real con **Netdata + API propia**.
 - Containerizar y automatizar despliegues (**Docker + CI/CD**).
+
+---
+
+## 🗂 Estructura del repositorio
+
+```text
+/securenet
+  /src                 -> codigo principal del frontend
+  /server              -> API de metricas (Node/Express)
+  /terraform           -> infraestructura como codigo
+  /docker              -> Dockerfiles y configuracion de despliegue
+  /public              -> recursos estaticos
+  /scripts             -> automatizaciones y utilidades
+  /docs                -> documentacion tecnica y operativa
+    /architecture      -> diagramas y recursos visuales
+  README.md            -> documentacion general del proyecto
+```
 
 ---
 
@@ -414,15 +431,16 @@ cp scripts/pre-commit .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 
-📖 **Más información**: Ver [SECURITY.md](SECURITY.md) y [REPO-STRATEGY.md](REPO-STRATEGY.md)
+📖 **Más información**: Ver [docs/repository/SECURITY.md](docs/repository/SECURITY.md) y [docs/repository/REPO-STRATEGY.md](docs/repository/REPO-STRATEGY.md)
 
 ---
 
 ## 📚 Documentación adicional
 
-- **[SETUP-GUIDE.md](SETUP-GUIDE.md)** - 🚀 Guía paso a paso para configurar repos público/privado
-- **[SECURITY.md](SECURITY.md)** - 🔒 Configuración de seguridad y archivos sensibles
-- **[REPO-STRATEGY.md](REPO-STRATEGY.md)** - 📋 Estrategia detallada de repositorios
+- **[docs/repository/SETUP-GUIDE.md](docs/repository/SETUP-GUIDE.md)** - 🚀 Guía paso a paso para configurar repos público/privado
+- **[docs/repository/SECURITY.md](docs/repository/SECURITY.md)** - 🔒 Configuración de seguridad y archivos sensibles
+- **[docs/repository/REPO-STRATEGY.md](docs/repository/REPO-STRATEGY.md)** - 📋 Estrategia detallada de repositorios
+- **[docs/README.md](docs/README.md)** - 📚 Índice de documentación del proyecto
 
 ---
 

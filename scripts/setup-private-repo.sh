@@ -14,7 +14,7 @@ Configuración de Repo Privado para Desarrollo
 =========================================="
 
 # Verificar que estamos en el repo público
-if [ ! -f "REPO-STRATEGY.md" ]; then
+if [ ! -f "docs/repository/REPO-STRATEGY.md" ]; then
     echo "❌ Error: Ejecuta este script desde el directorio del repo público"
     exit 1
 fi
@@ -111,4 +111,4 @@ echo ""
 echo "3. Trabaja en el repo PRIVADO día a día"
 echo "4. Sincroniza solo código limpio al PÚBLICO cuando termines features"
 echo ""
-echo "Lee REPO-STRATEGY.md para más detalles."
+echo "Lee docs/repository/REPO-STRATEGY.md para más detalles."
