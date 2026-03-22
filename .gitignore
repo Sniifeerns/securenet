@@ -37,7 +37,7 @@ docker/gateway/certs/
 .terraform/
 *.tfstate
 *.tfstate.*
-*.tfvars
+*.tfvars.*
 !*.tfvars.example
 crash.log
 override.tf
@@ -46,6 +46,8 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+variable.tf
+
 
 # ---------- Docker ----------
 docker/n8n/data/
