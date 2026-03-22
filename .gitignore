@@ -37,9 +37,8 @@ docker/gateway/certs/
 .terraform/
 *.tfstate
 *.tfstate.*
-*.tfvars.*
 *.tfvars
-terraform.tfvars
+*.tfvars.json
 !*.tfvars.example
 crash.log
 override.tf
