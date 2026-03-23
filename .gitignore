@@ -39,6 +39,7 @@ docker/gateway/certs/
 *.tfstate.*
 *.tfvars
 *.tfvars.json
+.terraform.lock.hcl
 !*.tfvars.example
 crash.log
 override.tf
