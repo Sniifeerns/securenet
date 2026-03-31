@@ -10,7 +10,7 @@ services:
     depends_on:
       - frontend
       - api
-      - netdata
+      - newrelic-infra
     networks:
       - dmz
 
@@ -26,22 +26,24 @@ services:
       context: .
       dockerfile: ./docker/api/Dockerfile
     environment:
-      - NETDATA_URL=http://netdata:19999
-      - PORT=3001
+      - port=3001
+      - NEW_RELIC_LICENSE_KEY= "${NRIC_LICENSE_KEY}"
+      - NEW_RELIC_ACCOUNT_ID= "${NRIC_ACCOUNT_ID}"
     networks:
       - dmz
-
-  netdata:
-    image: netdata/netdata:stable
+  newrelic-infra:
+    image: newrelic/infrastructure:latest
+    environment:
+      - NRIA_LICENSE_KEY="${NRIC_LICENSE_KEY}"
+      - NRIA_DISPLAY_NAME=securenet-host
     volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /etc/os-release:/host/etc/os-release:ro
-      - /var/run/docker.sock:/var/run/docker.sock.ro
-      
-    networks:
-      - dmz
-  
+      - "/:/host:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    network_mode: host
+    pid: "host"
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
   n8n:
     image: n8nio/n8n:latest
     ports:
