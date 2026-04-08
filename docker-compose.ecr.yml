@@ -5,13 +5,12 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./docker/gateway/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/gateway/certs:/etc/nginx/certs:ro
+    # volumes:
+    #   - ./docker/gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    #   - ./docker/gateway/certs:/etc/nginx/certs:ro
     depends_on:
       - frontend
       - api
-      - newrelic-infra
     networks:
       - dmz
     labels:
@@ -61,7 +60,7 @@ services:
     volumes:
       - "/:/host:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - ./docker/newrelic/docker-config.yml:/etc/newrelic-infra/integrations.d/docker-config.yml:ro
+      # - ./docker/newrelic/docker-config.yml:/etc/newrelic-infra/integrations.d/docker-config.yml:ro
     network_mode: host
     pid: "host"
     privileged: true
@@ -76,8 +75,8 @@ services:
     image: n8nio/n8n:latest
     ports:
       - "5678:5678"
-    volumes:
-      - ./docker/n8n/data:/home/node/.n8n
+    # volumes:
+    #   - ./docker/n8n/data:/home/node/.n8n
     networks:
       - dmz
     labels:
