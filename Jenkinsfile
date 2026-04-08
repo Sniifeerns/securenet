@@ -99,6 +99,37 @@ pipeline {
                             "
                         '''
                     }
+                    sshagent(credentials: ['id_jenkins']) {
+                        sh '''
+                            # Buscamos la IP privada
+                            APP_IP=$(aws ec2 describe-instances \
+                                --region ${AWS_REGION} \
+                                --filters "Name=tag:Name,Values=docker-aws" "Name=instance-state-name,Values=running" \
+                                --query "Reservations[0].Instances[0].PrivateIpAddress" \
+                                --output text)
+                            
+                            echo "Desplegando en la máquina App con IP interna: $APP_IP"
+                            
+                            # 🚀 LA CORRECCIÓN: Copiamos el archivo de orquestación al servidor
+                            scp -o StrictHostKeyChecking=no docker-compose.ecr.yml ec2-user@${APP_IP}:/opt/app/docker-compose.yml
+                            
+                            # Nos conectamos por SSH
+                            ssh -o StrictHostKeyChecking=no ec2-user@${APP_IP} "
+                                cd /opt/app
+                                
+                                echo 'NODE_ENV=production' > .env
+                                echo 'VITE_METRICS_API=/api' >> .env
+                                echo 'NEW_RELIC_LICENSE_KEY=${NR_LICENSE}' >> .env
+                                echo 'NEW_RELIC_ACCOUNT_ID=${NR_ACCOUNT}' >> .env
+                                echo 'NEW_RELIC_API_KEY=${NR_API}' >> .env
+                                
+                                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_API%/*}
+                                
+                                docker compose pull
+                                docker compose up -d
+                            "
+                        '''
+                    }
                 }
             }
         }
