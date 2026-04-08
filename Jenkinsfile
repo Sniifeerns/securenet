@@ -4,7 +4,7 @@ pipeline {
     environment {
         // ⚠️ CAMBIA ESTO por tu ID de cuenta de AWS y Región
         AWS_REGION = 'eu-west-3'
-        AWS_ACCOUNT_ID = '812752207341' // <-- ¡Pon tu ID de 12 dígitos aquí!
+        AWS_ACCOUNT_ID = '812752207341' // <-- Tu ID de cuenta personal
         
         // Estas son las URLs de los repositorios que creaste con Terraform
         ECR_API = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/securenet-api"
@@ -40,11 +40,10 @@ pipeline {
                 stage('Frontend') {
                     steps {
                         sh '''
-                            docker build -t ${ECR_FRONTEND}:${IMAGE_TAG} -f docker/frontend/Dockerfile .
+                            docker build --build-arg VITE_METRICS_API=/api -t ${ECR_FRONTEND}:${IMAGE_TAG} -f docker/frontend/Dockerfile .
                             docker tag ${ECR_FRONTEND}:${IMAGE_TAG} ${ECR_FRONTEND}:latest
                             docker push ${ECR_FRONTEND}:${IMAGE_TAG}
                             docker push ${ECR_FRONTEND}:latest
-                            docker build --build-arg VITE_METRICS_API=/api -t ${ECR_FRONTEND}:${IMAGE_TAG} -f docker/frontend/Dockerfile .
                         '''
                     }
                 }
@@ -73,7 +72,7 @@ pipeline {
                     // 2. Usamos el plugin sshagent con la credencial que creamos en Jenkins
                     sshagent(credentials: ['id_jenkins']) {
                         sh '''
-                            # Buscamos la IP privada
+                            # Buscamos la IP privada de la maquina de Docker
                             APP_IP=$(aws ec2 describe-instances \
                                 --region ${AWS_REGION} \
                                 --filters "Name=tag:Name,Values=docker-aws" "Name=instance-state-name,Values=running" \
@@ -82,49 +81,24 @@ pipeline {
                             
                             echo "Desplegando en la máquina App con IP interna: $APP_IP"
                             
-                            # Nos conectamos por SSH (¡sin el -i!)
-                            ssh -o StrictHostKeyChecking=no ec2-user@${APP_IP} "
-                                cd /opt/app
-                                
-                                echo 'NODE_ENV=production' > .env
-                                echo 'VITE_METRICS_API=/api' >> .env
-                                echo 'NEW_RELIC_LICENSE_KEY=${NR_LICENSE}' >> .env
-                                echo 'NEW_RELIC_ACCOUNT_ID=${NR_ACCOUNT}' >> .env
-                                echo 'NEW_RELIC_API_KEY=${NR_API}' >> .env
-                                
-                                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_API%/*}
-                                
-                                docker compose pull
-                                docker compose up -d
-                            "
-                        '''
-                    }
-                    sshagent(credentials: ['id_jenkins']) {
-                        sh '''
-                            # Buscamos la IP privada
-                            APP_IP=$(aws ec2 describe-instances \
-                                --region ${AWS_REGION} \
-                                --filters "Name=tag:Name,Values=docker-aws" "Name=instance-state-name,Values=running" \
-                                --query "Reservations[0].Instances[0].PrivateIpAddress" \
-                                --output text)
-                            
-                            echo "Desplegando en la máquina App con IP interna: $APP_IP"
-                            
-                            # 🚀 LA CORRECCIÓN: Copiamos el archivo de orquestación al servidor
+                            # 3. Copiamos el archivo de orquestación al servidor
                             scp -o StrictHostKeyChecking=no docker-compose.ecr.yml ec2-user@${APP_IP}:/opt/app/docker-compose.yml
                             
-                            # Nos conectamos por SSH
+                            # 4. Nos conectamos por SSH para encender todo
                             ssh -o StrictHostKeyChecking=no ec2-user@${APP_IP} "
                                 cd /opt/app
                                 
+                                # Creamos el archivo .env
                                 echo 'NODE_ENV=production' > .env
                                 echo 'VITE_METRICS_API=/api' >> .env
                                 echo 'NEW_RELIC_LICENSE_KEY=${NR_LICENSE}' >> .env
                                 echo 'NEW_RELIC_ACCOUNT_ID=${NR_ACCOUNT}' >> .env
                                 echo 'NEW_RELIC_API_KEY=${NR_API}' >> .env
                                 
+                                # AWS Login en la máquina destino
                                 aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_API%/*}
                                 
+                                # Descargamos las imágenes nuevas y levantamos la App
                                 docker compose pull
                                 docker compose up -d
                             "
