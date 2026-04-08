@@ -50,9 +50,8 @@ pipeline {
                 stage('Gateway') {
                     steps {
                         sh '''
-                            docker pull nginx:alpine
-                            docker tag nginx:alpine ${ECR_GATEWAY}:${IMAGE_TAG}
-                            docker tag nginx:alpine ${ECR_GATEWAY}:latest
+                            docker build -t ${ECR_GATEWAY}:${IMAGE_TAG} -f docker/gateway/Dockerfile .
+                            docker tag ${ECR_GATEWAY}:${IMAGE_TAG} ${ECR_GATEWAY}:latest
                             docker push ${ECR_GATEWAY}:${IMAGE_TAG}
                             docker push ${ECR_GATEWAY}:latest
                         '''
