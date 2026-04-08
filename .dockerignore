@@ -3,4 +3,4 @@ dist
 .git
 .vscode
 *.log
-docker/gateway/certs/
+# docker/gateway/certs/  # Necesitamos los certificados para el gateway
