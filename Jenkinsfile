@@ -4,7 +4,7 @@ pipeline {
     environment {
         // ⚠️ CAMBIA ESTO por tu ID de cuenta de AWS y Región
         AWS_REGION = 'eu-west-3'
-        AWS_ACCOUNT_ID = '058264151837' // <-- ¡Pon tu ID de 12 dígitos aquí!
+        AWS_ACCOUNT_ID = '812752207341' // <-- ¡Pon tu ID de 12 dígitos aquí!
         
         // Estas son las URLs de los repositorios que creaste con Terraform
         ECR_API = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/securenet-api"
