@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  jenkins-local:
+    build: 
+      context: .
+      dockerfile: Dockerfile.jenkins
+    container_name: jenkins-local
+    user: root # Necesario para tener permisos sobre el docker.sock local
+    ports:
+      - "8080:8080"
+    volumes:
+      - jenkins_local_data:/var/jenkins_home
+      # Esta es la línea mágica que conecta el Jenkins con tu Docker local:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  jenkins_local_data:
