@@ -46,7 +46,7 @@ resource "aws_key_pair" "ssh_key" {
 
 resource "aws_instance" "docker_aws" {
     ami = data.aws_ami.amazon_linux.id
-    instance_type = "t2.medium"
+    instance_type = "t2.small"
     tags = {
         Name = "docker-aws"
     }

@@ -8,7 +8,7 @@ echo "Iniciando configuración de la máquina App (Docker)..."
 
 # 2. Actualizar el sistema e instalar dependencias clave
 dnf update -y
-dnf install -y docker git curl
+dnf install -y docker git curl --allowerasing
 
 # 3. Iniciar Docker y asegurar que se levanta si la máquina se reinicia
 systemctl enable --now docker

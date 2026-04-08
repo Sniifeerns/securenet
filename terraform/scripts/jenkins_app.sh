@@ -5,7 +5,7 @@ set -euxo pipefail
 exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
 
 sudo dnf update -y
-sudo dnf install -y docker git 
+sudo dnf install -y docker git
 
 sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
@@ -19,20 +19,19 @@ fi
 
 sudo mkdir -p /opt/jenkins
 
-# 1. NUEVO: Creamos un Dockerfile para instalar Docker dentro de Jenkins
+# 1. Creamos un Dockerfile para instalar Docker dentro de Jenkins
 sudo tee /opt/jenkins/Dockerfile > /dev/null <<'EOF'
 FROM jenkins/jenkins:lts
 USER root
 RUN apt-get update && apt-get install -y docker.io awscli
 EOF
 
-# 2. MODIFICADO: Usamos el Dockerfile y montamos el docker.sock
+# 2. Creamos el docker-compose
+# 2. MODIFICADO: Quitamos el bloque "build" y usamos "image"
 sudo tee /opt/jenkins/docker-compose.yaml > /dev/null <<'EOF'
 services:
   jenkins:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    image: custom-jenkins:latest
     container_name: jenkins
     user: root # Necesario para tener permisos sobre el docker.sock
     restart: unless-stopped
@@ -53,10 +52,15 @@ volumes:
   jenkins_home:
 EOF
 
-# Levantamos el servicio (usando --build para que lea nuestro Dockerfile)
-sudo docker compose -f /opt/jenkins/docker-compose.yaml up -d --build
+cd /opt/jenkins
 
-# Wait for Jenkins to report healthy state (up to 10 minutes).
+# 🚨 EL TRUCO: Construimos la imagen primero usando el motor clásico de Docker
+sudo docker build -t custom-jenkins:latest .
+
+# Levantamos el servicio (ahora Compose solo lo arranca, no lo construye)
+sudo docker compose up -d
+
+# Wait for Jenkins to report healthy state
 for _ in $(seq 1 60); do
   health_status="$(sudo docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' jenkins || true)"
   if [ "$health_status" = "healthy" ]; then
