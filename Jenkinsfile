@@ -64,47 +64,43 @@ pipeline {
         
         stage('Despliegue e Inyección del .env') {
             steps {
-                // 1. Invocamos LAS TRES credenciales secretas a la vez
+                // 1. Invocamos LAS TRES credenciales secretas
                 withCredentials([
                     string(credentialsId: 'NR_LICENSE_KEY', variable: 'NR_LICENSE'),
                     string(credentialsId: 'NR_ACCOUNT_ID', variable: 'NR_ACCOUNT'),
                     string(credentialsId: 'NR_API_KEY', variable: 'NR_API')
                 ]) {
-                    sh '''
-                        # Buscamos la IP privada dinámica de tu máquina
-                        APP_IP=$(aws ec2 describe-instances \
-                            --region ${AWS_REGION} \
-                            --filters "Name=tag:Name,Values=docker-aws" "Name=instance-state-name,Values=running" \
-                            --query "Reservations[0].Instances[0].PrivateIpAddress" \
-                            --output text)
-                        
-                        echo "Desplegando en la máquina App con IP interna: $APP_IP"
-                        
-                        # Nos conectamos por SSH
-                        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_jenkins ec2-user@${APP_IP} "
-                            cd /opt/app
+                    // 2. Usamos el plugin sshagent con la credencial que creamos en Jenkins
+                    sshagent(credentials: ['id_jenkins']) {
+                        sh '''
+                            # Buscamos la IP privada
+                            APP_IP=$(aws ec2 describe-instances \
+                                --region ${AWS_REGION} \
+                                --filters "Name=tag:Name,Values=docker-aws" "Name=instance-state-name,Values=running" \
+                                --query "Reservations[0].Instances[0].PrivateIpAddress" \
+                                --output text)
                             
-                            # 2. CREAMOS EL .ENV
-                            # Primero las variables públicas (usamos > para crear el archivo nuevo)
-                            echo 'NODE_ENV=production' > .env
-                            echo 'VITE_METRICS_API=/api' >> .env
+                            echo "Desplegando en la máquina App con IP interna: $APP_IP"
                             
-                            # Luego añadimos las variables secretas (usamos >> para añadir al final)
-                            echo 'NEW_RELIC_LICENSE_KEY=${NR_LICENSE}' >> .env
-                            echo 'NEW_RELIC_ACCOUNT_ID=${NR_ACCOUNT}' >> .env
-                            echo 'NEW_RELIC_API_KEY=${NR_API}' >> .env
-                            
-                            # Login en AWS ECR
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_API%/*}
-                            
-                            # Descargar y levantar
-                            docker compose pull
-                            docker compose up -d
-                        "
-                    '''
+                            # Nos conectamos por SSH (¡sin el -i!)
+                            ssh -o StrictHostKeyChecking=no ec2-user@${APP_IP} "
+                                cd /opt/app
+                                
+                                echo 'NODE_ENV=production' > .env
+                                echo 'VITE_METRICS_API=/api' >> .env
+                                echo 'NEW_RELIC_LICENSE_KEY=${NR_LICENSE}' >> .env
+                                echo 'NEW_RELIC_ACCOUNT_ID=${NR_ACCOUNT}' >> .env
+                                echo 'NEW_RELIC_API_KEY=${NR_API}' >> .env
+                                
+                                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_API%/*}
+                                
+                                docker compose pull
+                                docker compose up -d
+                            "
+                        '''
+                    }
                 }
             }
         }
-     }
 }
     
