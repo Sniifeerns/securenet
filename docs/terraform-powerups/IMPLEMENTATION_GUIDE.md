@@ -340,6 +340,10 @@ COPY docker/gateway/ssl /etc/nginx/ssl
 EXPOSE 80 443
 CMD ["nginx", "-g", "daemon off;"]
 ```
+![Docker local](./img/cap6-docker.png)
+
+![Jenkins local](./img/cap7-jenkins-configurado.png)
+
 
 ##### 3.2: Crear Jenkins Pipeline para Build Local
 
@@ -443,6 +447,7 @@ pipeline {
    curl -X POST http://<jenkins-ip>:8080/job/securenet-build-local/build \
      --user admin:admin
    ```
+![Se ejecuta el pipeline](./img/cap7-jenkins-configurado.png)
 
 ##### 3.4: Validar Build Local
 
