@@ -60,18 +60,29 @@ resource "aws_instance" "docker_aws" {
 }
 
 resource "aws_security_group" "docker" {
-    name       = "docker"
-    description = "Security group for Docker instance"
+    name        = "docker"
+    description = "Security group for Docker/App instance"
+    
+    # SSH para que Jenkins pueda entrar
     ingress {
-        from_port   = 2375
-        to_port     = 2375
+        from_port   = 22
+        to_port     = 22
         protocol    = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
     }
 
+    # HTTP para tu web
     ingress {
-        from_port   = 22
-        to_port     = 22
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    # HTTPS para tu web
+    ingress {
+        from_port   = 443
+        to_port     = 443
         protocol    = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
     }
