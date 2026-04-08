@@ -7,17 +7,9 @@ pipeline {
     }
     
     stages {
-        stage('Clone Repository') {
-            steps {
-                // Asegúrate de que las credenciales 'git-ssh' están creadas en Jenkins
-                git credentialsId: 'git-ssh',
-                    url: 'git@github.com:Sniifeerns/securenet.git',
-                    branch: 'feature/terraform'
-            }
-        }
+        // ❌ Hemos borrado el stage('Clone Repository') entero
         
         stage('Build Docker Images') {
-            // Construimos las 3 imágenes a la vez para ir más rápido
             parallel {
                 stage('Build API') {
                     steps {
@@ -38,7 +30,6 @@ pipeline {
                 stage('Build Gateway') {
                     steps {
                         sh '''
-                            # Si no tienes Dockerfile para el gateway, usa la imagen original
                             docker pull nginx:alpine
                             docker tag nginx:alpine securenet-gateway:latest
                         '''

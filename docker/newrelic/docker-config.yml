@@ -1,0 +1,27 @@
+integrations:
+  - name: nri-docker
+    env:
+      # Docker socket location
+      DOCKER_HOSTNAME: ${HOSTNAME}
+      
+      # Enable verbose logging for troubleshooting
+      VERBOSE: 0
+      
+      # Collect container metrics
+      METRICS: true
+      
+      # Collect container inventory
+      INVENTORY: true
+      
+      # Collect container events
+      EVENTS: true
+      
+      # Label containers for better identification
+      CONTAINER_DISCOVERY: true
+      
+      # Timeout for Docker API calls
+      TIMEOUT: 30
+    interval: 15s
+    labels:
+      env: production
+      app: securenet

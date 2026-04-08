@@ -6,68 +6,48 @@ const app = express();
 app.use(cors());
 
 const PORT = process.env.METRICS_PORT || 3001;
-const NETDATA_URL = process.env.NETDATA_URL || "http://0.0.0.0:19999";
+const NEW_RELIC_API_KEY = process.env.NEW_RELIC_API_KEY || "";
+const NEW_RELIC_ACCOUNT_ID = process.env.NEW_RELIC_ACCOUNT_ID || "";
 
-async function fetchJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`HTTP ${r.status} en ${url}`);
-  return r.json();
-}
-
-async function tryFetchJSON(url) {
-  try {
-    return await fetchJSON(url);
-  } catch (_e) {
-    return null;
-  }
-}
-
-function normalizeSeries(json) {
-  const labelsRaw = (json?.labels ?? []).map((x) => String(x).toLowerCase().trim());
-  const rowRaw = json?.data?.[0] ?? [];
-
-  const hasTime = labelsRaw[0] === "time";
-  const labels = hasTime ? labelsRaw.slice(1) : labelsRaw;
-  const row = hasTime ? rowRaw.slice(1) : rowRaw;
-
-  return { labels, row };
-}
-
-function pickByNames(labels, row, names) {
-  for (const n of names) {
-    const idx = labels.findIndex((x) => x.includes(n));
-    if (idx >= 0) return Number(row[idx] ?? 0);
-  }
-  return null;
-}
-
-async function fetchNetSeries() {
-  const candidates = [
-    "system.net",
-    "system.ipv4",
-    "net.eth0",
-    "net.enp0s3",
-    "net.ens18",
-    "net.enp0s8",
-  ];
-
-  for (const chart of candidates) {
-    const url = `${NETDATA_URL}/api/v1/data?chart=${chart}&format=json&points=1&after=-1`;
-    const data = await tryFetchJSON(url);
-    if (data?.data?.length) return normalizeSeries(data);
+// Función helper para hacer queries a New Relic
+async function queryNewRelic(nrql) {
+  if (!NEW_RELIC_API_KEY || !NEW_RELIC_ACCOUNT_ID) {
+    throw new Error("Missing NEW_RELIC_API_KEY or NEW_RELIC_ACCOUNT_ID");
   }
 
-  const chartsJson = await tryFetchJSON(`${NETDATA_URL}/api/v1/charts`);
-  const chartNames = Object.keys(chartsJson?.charts ?? {});
-  const ifaceChart = chartNames.find((name) => /^net\./.test(name));
+  const url = `https://api.eu.newrelic.com/graphql`;
+  const query = {
+    query: `{
+      actor {
+        account(id: ${NEW_RELIC_ACCOUNT_ID}) {
+          nrql(query: "${nrql}") {
+            results
+          }
+        }
+      }
+    }`
+  };
 
-  if (ifaceChart) {
-    const url = `${NETDATA_URL}/api/v1/data?chart=${ifaceChart}&format=json&points=1&after=-1`;
-    const data = await tryFetchJSON(url);
-    if (data?.data?.length) return normalizeSeries(data);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "API-Key": NEW_RELIC_API_KEY
+    },
+    body: JSON.stringify(query)
+  });
+
+  if (!response.ok) {
+    throw new Error(`New Relic API error: ${response.status}`);
   }
 
-  return null;
+  const data = await response.json();
+  
+  if (data.errors) {
+    throw new Error(`New Relic query error: ${JSON.stringify(data.errors)}`);
+  }
+  
+  return data?.data?.actor?.account?.nrql?.results || [];
 }
 
 app.get("/api/health", (_req, res) => {
@@ -76,89 +56,74 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/metrics", async (_req, res) => {
   try {
-    // =========================
-    // CPU (tu Netdata no trae idle)
-    // =========================
-    const cpuUrl = `${NETDATA_URL}/api/v1/data?chart=system.cpu&format=json&points=1&after=-1&options=percentage`;
-    const cpuJson = await fetchJSON(cpuUrl);
-    const cpuSeries = normalizeSeries(cpuJson);
+    // Métricas del HOST
+    const hostCpuNrql = "SELECT average(cpuPercent) as cpu FROM SystemSample SINCE 1 minute ago";
+    const hostMemoryNrql = "SELECT average(memoryUsedPercent) as memory FROM SystemSample SINCE 1 minute ago";
+    const hostDiskNrql = "SELECT average(diskUsedPercent) as disk FROM StorageSample SINCE 1 minute ago";
+    const hostNetworkNrql = "SELECT average(receiveBytesPerSecond) as netIn, average(transmitBytesPerSecond) as netOut FROM NetworkSample SINCE 1 minute ago";
+    const hostLoadNrql = "SELECT average(loadAverageOneMinute) as load1, average(loadAverageFiveMinute) as load5 FROM SystemSample SINCE 1 minute ago";
 
-    const busyNames = [
-      "user",
-      "system",
-      "nice",
-      "iowait",
-      "irq",
-      "softirq",
-      "steal",
-      "guest",
-      "guest_nice",
-    ];
+    // Métricas de CONTENEDORES (solo CPU y memoria) - usando 'name' en lugar de 'containerName'
+    const containersNrql = "SELECT average(cpuPercent) as cpu, average(memoryResidentSizeBytes)/1024/1024 as memoryMB FROM ContainerSample FACET name SINCE 1 minute ago LIMIT 10";
 
-    let cpu = busyNames.reduce((acc, name) => {
-      const idx = cpuSeries.labels.indexOf(name);
-      if (idx >= 0) acc += Math.abs(Number(cpuSeries.row[idx] ?? 0));
-      return acc;
-    }, 0);
+    const [hostCpu, hostMemory, hostDisk, hostNetwork, hostLoad, containers] = await Promise.all([
+      queryNewRelic(hostCpuNrql),
+      queryNewRelic(hostMemoryNrql),
+      queryNewRelic(hostDiskNrql),
+      queryNewRelic(hostNetworkNrql),
+      queryNewRelic(hostLoadNrql),
+      queryNewRelic(containersNrql)
+    ]);
 
-    cpu = Math.max(0, Math.min(100, cpu));
+    // Procesar datos del host
+    const host = {
+      cpu: hostCpu[0]?.cpu?.toFixed(1) || "0.0",
+      memory: hostMemory[0]?.memory?.toFixed(1) || "0.0",
+      disk: hostDisk[0]?.disk?.toFixed(1) || "0.0",
+      netInBps: hostNetwork[0]?.netIn || 0,
+      netOutBps: hostNetwork[0]?.netOut || 0,
+      load1: hostLoad[0]?.load1?.toFixed(2) || "0.00",
+      load5: hostLoad[0]?.load5?.toFixed(2) || "0.00",
+    };
 
-    // =========================
-    // RAM
-    // =========================
-    const ramUrl = `${NETDATA_URL}/api/v1/data?chart=system.ram&format=json&points=1&after=-1`;
-    const ramJson = await fetchJSON(ramUrl);
-    const ramSeries = normalizeSeries(ramJson);
-
-    let used = pickByNames(ramSeries.labels, ramSeries.row, ["used"]);
-    let free = pickByNames(ramSeries.labels, ramSeries.row, ["free"]);
-
-    // fallback si etiquetas distintas
-    if (used === null) used = Number(ramSeries.row[0] ?? 0);
-    if (free === null) free = Number(ramSeries.row[1] ?? 0);
-
-    used = Math.abs(used);
-    free = Math.abs(free);
-
-    const ram = used + free > 0 ? (used / (used + free)) * 100 : 0;
-
-    // =========================
-    // NET
-    // =========================
-    let netInBps = 0;
-    let netOutBps = 0;
-    const netSeries = await fetchNetSeries();
-
-    if (netSeries) {
-      netInBps = pickByNames(netSeries.labels, netSeries.row, ["received", "recv", "in", "rx"]);
-      netOutBps = pickByNames(netSeries.labels, netSeries.row, ["sent", "out", "tx"]);
-
-      if (netInBps === null) netInBps = Number(netSeries.row[0] ?? 0);
-      if (netOutBps === null) netOutBps = Number(netSeries.row[1] ?? 0);
-
-      netInBps = Math.abs(netInBps);
-      netOutBps = Math.abs(netOutBps);
-    }
+    // Procesar datos de contenedores - el FACET 'name' aparece como 'name' en los resultados
+    const containersList = containers.map(c => ({
+      name: c.name || c.facet || "unknown",
+      cpu: c.cpu?.toFixed(1) || "0.0",
+      memory: c.memoryMB?.toFixed(0) || "0"
+    }));
 
     res.json({
       ok: true,
-      cpu: Number(cpu.toFixed(1)),
-      ram: Number(ram.toFixed(1)),
-      netInBps: Number(netInBps.toFixed(6)),
-      netOutBps: Number(netOutBps.toFixed(6)),
+      host,
+      containers: containersList,
       threats: 0,
-      netDataAvailable: Boolean(netSeries),
       updatedAt: new Date().toISOString(),
     });
   } catch (e) {
-    res.status(502).json({
-      ok: false,
-      error: e.message || "No se pudo consultar Netdata",
+    console.error("Error fetching New Relic metrics:", e.message);
+    // Devolver datos vacíos con warning en lugar de error
+    res.json({
+      ok: true,
+      host: {
+        cpu: "0.0",
+        memory: "0.0",
+        disk: "0.0",
+        netInBps: 0,
+        netOutBps: 0,
+        load1: "0.00",
+        load5: "0.00",
+      },
+      containers: [],
+      threats: 0,
+      updatedAt: new Date().toISOString(),
+      warning: e.message || "Error consultando New Relic"
     });
   }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`metrics-server escuchando en http://0.0.0.0:${PORT}`);
-  console.log(`NETDATA_URL=${NETDATA_URL}`);
+  console.log(`NEW_RELIC_ACCOUNT_ID=${NEW_RELIC_ACCOUNT_ID}`);
+  console.log(`NEW_RELIC_API_KEY=${NEW_RELIC_API_KEY ? "configurado" : "NO CONFIGURADO"}`);
 });

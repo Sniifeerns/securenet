@@ -1,5 +1,6 @@
 services:
   gateway:
+    container_name: securenet-gateway
     image: nginx:alpine
     ports:
       - "80:80"
@@ -13,38 +14,67 @@ services:
       - newrelic-infra
     networks:
       - dmz
+    labels:
+      com.newrelic.monitor: "true"
+      com.newrelic.app: "securenet"
+      com.newrelic.service: "gateway"
+    restart: unless-stopped
 
   frontend:
+    container_name: securenet-frontend
     build:
       context: .
       dockerfile: ./docker/frontend/Dockerfile
     networks:
       - dmz
+    labels:
+      com.newrelic.monitor: "true"
+      com.newrelic.app: "securenet"
+      com.newrelic.service: "frontend"
+    restart: unless-stopped
 
   api:
+    container_name: securenet-api
     build:
       context: .
       dockerfile: ./docker/api/Dockerfile
     environment:
-      - port=3001
-      - NEW_RELIC_LICENSE_KEY= "${NRIC_LICENSE_KEY}"
-      - NEW_RELIC_ACCOUNT_ID= "${NRIC_ACCOUNT_ID}"
+      - PORT=3001
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NEW_RELIC_ACCOUNT_ID=${NEW_RELIC_ACCOUNT_ID}
+      - NEW_RELIC_API_KEY=${NEW_RELIC_API_KEY}
     networks:
       - dmz
+    labels:
+      com.newrelic.monitor: "true"
+      com.newrelic.app: "securenet"
+      com.newrelic.service: "api"
+    restart: unless-stopped
   newrelic-infra:
+    container_name: securenet-newrelic-infra
     image: newrelic/infrastructure:latest
     environment:
-      - NRIA_LICENSE_KEY="${NRIC_LICENSE_KEY}"
+      - NRIA_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
       - NRIA_DISPLAY_NAME=securenet-host
+      - NRIA_HOST_ROOT=/host
+      - NRIA_PASSTHROUGH_ENVIRONMENT=KUBERNETES_SERVICE_HOST,KUBERNETES_SERVICE_PORT
+      - NRIA_VERBOSE=0
+      # Enable Docker integration
+      - NRIA_DOCKER_ENABLED=true
     volumes:
       - "/:/host:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - ./docker/newrelic/docker-config.yml:/etc/newrelic-infra/integrations.d/docker-config.yml:ro
     network_mode: host
     pid: "host"
     privileged: true
     cap_add:
       - SYS_PTRACE
+    restart: unless-stopped
+    labels:
+      com.newrelic.monitor: "false"
   n8n:
+    container_name: securenet-n8n
     image: n8nio/n8n:latest
     ports:
       - "5678:5678"
@@ -52,6 +82,11 @@ services:
       - ./docker/n8n/data:/home/node/.n8n
     networks:
       - dmz
+    labels:
+      com.newrelic.monitor: "true"
+      com.newrelic.app: "securenet"
+      com.newrelic.service: "n8n"
+    restart: unless-stopped
 
 networks:
   dmz:

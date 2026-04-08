@@ -20,7 +20,39 @@ Configurar dos repositorios:
    - ❌ **NO marques** "Add a README file"
 3. Clic en **"Create repository"**
 
-### 2. Ejecutar script de configuración automática
+### 2. Comprobar que Docker Compose funciona en local
+
+Antes de continuar, verifica que la configuración de Docker funciona correctamente:
+
+```bash
+# Configurar variables de entorno temporales (usa valores de prueba)
+cp .env.example .env
+# Edita .env y comenta o elimina la configuración de New Relic si no tienes credenciales
+code .env
+
+# Levantar los servicios
+docker compose up -d
+
+# Verificar que los contenedores están corriendo
+docker compose ps
+
+# Probar los endpoints
+curl -k https://localhost/api/health
+curl -k https://localhost/api/metrics
+
+# Ver logs si hay algún problema
+docker compose logs
+
+# Detener los servicios cuando termines la verificación
+docker compose down
+```
+
+✅ **Importante**: 
+- Si no tienes credenciales de New Relic, comenta o elimina el servicio `newrelic-infra` en `docker-compose.yml`
+- Los certificados de prueba generarán avisos de seguridad (es normal en desarrollo local)
+- Si algún contenedor falla, revisa los logs con `docker compose logs <nombre-servicio>`
+
+### 3. Ejecutar script de configuración automática
 
 Desde la carpeta actual (repo público `securenet`):
 
@@ -35,7 +67,7 @@ Este script:
 - Copia plantillas `.env.example` y `terraform.tfvars.example`
 - Genera certificados SSL locales
 
-### 3. Configurar archivos con credenciales reales (en el repo privado)
+### 4. Configurar archivos con credenciales reales (en el repo privado)
 
 ```bash
 cd ../securenet-dev
@@ -50,7 +82,7 @@ code terraform/terraform.tfvars
 ls -la docker/gateway/certs/
 ```
 
-### 4. Commitear configuración real (solo en privado)
+### 5. Commitear configuración real (solo en privado)
 
 ```bash
 git add .env terraform/terraform.tfvars docker/gateway/certs/
