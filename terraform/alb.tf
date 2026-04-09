@@ -91,7 +91,7 @@ resource "aws_lb" "app_alb" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
 
-  subnets = slice(data.aws_subnets.public.ids, 0, 2)
+  subnets = data.aws_subnets.public.ids
 }
 
 resource "aws_lb_listener" "https" {
