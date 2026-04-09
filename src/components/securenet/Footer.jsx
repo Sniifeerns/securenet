@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Github, Linkedin, Mail, ExternalLink } from 'lucide-react';
+import { Cloud, Linkedin, ExternalLink } from 'lucide-react';
 
 export default function Footer() {
   const scrollToTop = () => {
@@ -12,21 +12,34 @@ export default function Footer() {
       <div className="absolute inset-0 bg-[#050508]" />
       
       <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-4 gap-12 mb-12">
+        <div className="grid md:grid-cols-3 gap-12 mb-12">
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500">
-                <Shield className="w-6 h-6 text-white" />
+              <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500">
+                <Cloud className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                SecureNet Lab
+              <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                SecureNet Cloud
               </span>
             </div>
             <p className="text-gray-400 leading-relaxed max-w-md">
-              Infraestructura de red segura con segmentación avanzada, DMZ protegida 
-              y automatización inteligente. Proyecto de innovación desarrollado por el Grupo B.
+              Proyecto de modernización cloud con infraestructura como código (Terraform), 
+              despliegue en AWS EC2, contenedores Docker, CI/CD con Jenkins y 
+              monitorización con New Relic.
             </p>
+            
+            {/* Tech stack badges */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              {['Terraform', 'AWS EC2', 'Docker', 'Jenkins', 'New Relic'].map((tech) => (
+                <span
+                  key={tech}
+                  className="px-3 py-1 rounded-full bg-gray-800/60 border border-gray-700 text-gray-400 text-xs"
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Quick Links */}
@@ -34,10 +47,10 @@ export default function Footer() {
             <h4 className="text-white font-semibold mb-4">Secciones</h4>
             <ul className="space-y-3">
               {[
-                { label: 'Arquitectura', id: 'architecture' },
-                { label: 'Seguridad', id: 'security' },
-                { label: 'Servicios', id: 'services' },
-                { label: 'Equipo', id: 'team' },
+                { label: 'Stack Cloud', id: 'cloud-architecture' },
+                { label: 'Objetivos', id: 'objectives' },
+                { label: 'Dashboard Live', id: 'dashboard' },
+                { label: 'Desarrollador', id: 'team' },
               ].map((link) => (
                 <li key={link.id}>
                   <button
@@ -50,32 +63,6 @@ export default function Footer() {
               ))}
             </ul>
           </div>
-
-          {/* Resources */}
-          <div>
-            <h4 className="text-white font-semibold mb-4">Recursos</h4>
-            <ul className="space-y-3">
-              <li>
-                <a
-                  href="https://somosdelprieto.com/index.php/2025/11/27/trabajando-en-el-proyecto-securenet-lab/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-cyan-400 transition-colors text-sm inline-flex items-center gap-1"
-                >
-                  Noticia del Proyecto
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <button
-                  onClick={() => document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="text-gray-400 hover:text-cyan-400 transition-colors text-sm"
-                >
-                  Dashboard Demo
-                </button>
-              </li>
-            </ul>
-          </div>
         </div>
 
         {/* Divider */}
@@ -83,9 +70,21 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-gray-500 text-sm text-center md:text-left">
-            SecureNet Lab – <span className="text-cyan-400">Grupo B</span> – Proyecto de Innovación 2026
-          </p>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <p className="text-gray-500 text-sm text-center md:text-left">
+              Desarrollado por <span className="text-cyan-400 font-medium">Javier Naranjo Simarro</span>
+            </p>
+            <a
+              href="https://www.linkedin.com/in/javier-naranjo-simarro-67325a356"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-gray-500 hover:text-cyan-400 transition-colors text-sm"
+            >
+              <Linkedin className="w-4 h-4" />
+              LinkedIn
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
           
           <div className="flex items-center gap-4">
             <button

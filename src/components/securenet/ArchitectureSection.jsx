@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Network, Shield, Globe, Lock, Router, Server, Wifi } from 'lucide-react';
+import { Network, Shield, Globe, Lock, Router, Server, Wifi, Smartphone } from 'lucide-react';
 
 const features = [
   {
@@ -32,6 +32,11 @@ const features = [
     title: "Automatización n8n",
     description: "Workflows automatizados para monitoreo, alertas y gestión de la infraestructura.",
     icon: Server
+  },
+  {
+    title: "Power Apps Ops",
+    description: "Capa operativa final para acciones sencillas: apagar/encender EC2, parar/reiniciar contenedores y ver una monitorización ligera del estado.",
+    icon: Smartphone
   }
 ];
 
