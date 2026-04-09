@@ -50,6 +50,19 @@ Esta clave se usa para hacer queries a la API de New Relic (NerdGraph/GraphQL).
 NEW_RELIC_API_KEY=NRAK-XXXXXXXXXXXXXXXXXXXXX
 ```
 
+### 4. Región y ventana de consulta (opcional, recomendado)
+
+Para evitar que el dashboard quede "ciego" cuando hay latencia de ingesta:
+
+```bash
+# En tu .env
+NEW_RELIC_REGION=eu
+METRICS_LOOKBACK_MINUTES=5
+```
+
+- `NEW_RELIC_REGION`: `eu` o `us` (el servidor usa fallback automático entre endpoints).
+- `METRICS_LOOKBACK_MINUTES`: amplía la ventana NRQL para capturar datos recientes aunque no lleguen en 1 minuto exacto.
+
 ## Archivo .env completo
 
 Tu archivo `.env` debe verse así:
@@ -60,6 +73,8 @@ VITE_METRICS_API=/api
 NEW_RELIC_LICENSE_KEY=eu01xf1515937b5bd9bf63c6448fc57191c7NRAL
 NEW_RELIC_ACCOUNT_ID=7875275
 NEW_RELIC_API_KEY=NRAK-XXXXXXXXXXXXXXXXXXXXX
+NEW_RELIC_REGION=eu
+METRICS_LOOKBACK_MINUTES=5
 ```
 
 ## Verificar que funciona

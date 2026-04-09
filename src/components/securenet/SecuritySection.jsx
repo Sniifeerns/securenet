@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Lock, Network, Server, Key, Wifi, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Shield, Lock, Network, Server, Key, Wifi, CheckCircle2 } from 'lucide-react';
 
 const securityFeatures = [
   {
