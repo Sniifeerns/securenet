@@ -50,6 +50,18 @@ resource "aws_lb_target_group" "app_tg" {
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.main.id
+
+
+  health_check {
+    path                = "/"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    matcher             = "200-399" # ¡Acepta OK (200) y Redirecciones (301, 302)!
+    interval            = 15        # Pregunta cada 15s (para que sea más rápido)
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
 }
 
 resource "aws_lb_target_group_attachment" "app_attach" {
