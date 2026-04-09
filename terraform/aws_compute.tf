@@ -1,123 +1,123 @@
 resource "aws_instance" "jenkins_aws" {
-    ami = data.aws_ami.amazon_linux.id
-    instance_type = "t2.medium"
-    tags = {
-        Name = "jenkins-aws"
-    }
-    user_data = file("${path.module}/scripts/jenkins_app.sh")
-    user_data_replace_on_change = true
-    vpc_security_group_ids = [aws_security_group.jenkins.id]
-    key_name = aws_key_pair.ssh_key.key_name
-    iam_instance_profile = aws_iam_instance_profile.jenkins_instance_profile.name
-  
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t2.medium"
+  tags = {
+    Name = "jenkins-aws"
+  }
+  user_data                   = file("${path.module}/scripts/jenkins_app.sh")
+  user_data_replace_on_change = true
+  vpc_security_group_ids      = [aws_security_group.jenkins.id]
+  key_name                    = aws_key_pair.ssh_key.key_name
+  iam_instance_profile        = aws_iam_instance_profile.jenkins_instance_profile.name
 
-  
+
+
 }
 resource "aws_security_group" "jenkins" {
-    name       = "jenkins"
-    description = "Security group for Jenkins instance"
-    ingress {
-        from_port   = 8080
-        to_port     = 8080
-        protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  name        = "jenkins"
+  description = "Security group for Jenkins instance"
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    ingress {
-        from_port   = 22
-        to_port     = 22
-        protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    egress {
-        from_port   = 0
-        to_port     = 0
-        protocol    = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_key_pair" "ssh_key" {
-    key_name   = "ssh_key_jenkins"
-    public_key = var.ssh_public_key
-  
+  key_name   = "ssh_key_jenkins"
+  public_key = var.ssh_public_key
+
 }
 
 resource "aws_instance" "docker_aws" {
-    ami = data.aws_ami.amazon_linux.id
-    instance_type = "t2.small"
-    tags = {
-        Name = "docker-aws"
-    }
-    user_data = file("${path.module}/scripts/docker_app.sh")
-    user_data_replace_on_change = true
-    vpc_security_group_ids = [aws_security_group.docker.id]
-    key_name = aws_key_pair.ssh_key.key_name
-    iam_instance_profile = aws_iam_instance_profile.jenkins_instance_profile.name
-  
-    
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t2.small"
+  tags = {
+    Name = "docker-aws"
+  }
+  user_data                   = file("${path.module}/scripts/docker_app.sh")
+  user_data_replace_on_change = true
+  vpc_security_group_ids      = [aws_security_group.docker.id]
+  key_name                    = aws_key_pair.ssh_key.key_name
+  iam_instance_profile        = aws_iam_instance_profile.jenkins_instance_profile.name
+
+
 }
 
 resource "aws_security_group" "docker" {
-    name        = "docker"
-    description = "Security group for Docker/App instance"
-    
-    # SSH para que Jenkins pueda entrar
-    ingress {
-        from_port   = 22
-        to_port     = 22
-        protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  name        = "docker"
+  description = "Security group for Docker/App instance"
 
-    # HTTP para tu web
-    ingress {
-        from_port   = 80
-        to_port     = 80
-        protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  # SSH para que Jenkins pueda entrar
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    # HTTPS para tu web
-    ingress {
-        from_port   = 443
-        to_port     = 443
-        protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  # HTTP para tu web
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    egress {
-        from_port   = 0
-        to_port     = 0
-        protocol    = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  # HTTPS para tu web
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 resource "aws_iam_role" "jenkins_role" {
-    name = "jenkins_role"
-    assume_role_policy = jsonencode({
-        Version = "2012-10-17",
-        Statement = [
-            {
-                Action = "sts:AssumeRole",
-                Effect = "Allow",
-                Principal = {
-                    Service = "ec2.amazonaws.com"
-                }
-            }
-        ]
-    })
-  
+  name = "jenkins_role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+
 }
 resource "aws_iam_role_policy_attachment" "jenkins_policy_attachment" {
-    role       = aws_iam_role.jenkins_role.name
-    policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
-  
+  role       = aws_iam_role.jenkins_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+
 }
 resource "aws_iam_instance_profile" "jenkins_instance_profile" {
-    name = "jenkins_instance_profile"
-    role = aws_iam_role.jenkins_role.name
+  name = "jenkins_instance_profile"
+  role = aws_iam_role.jenkins_role.name
 }
 data "aws_ami" "amazon_linux" {
   most_recent = true

@@ -26,12 +26,12 @@ export default function Footer() {
             <p className="text-gray-400 leading-relaxed max-w-md">
               Proyecto de modernización cloud con infraestructura como código (Terraform), 
               despliegue en AWS EC2, contenedores Docker, CI/CD con Jenkins y 
-              monitorización con New Relic.
+              monitorización con New Relic, con capa operativa final en Power Apps.
             </p>
             
             {/* Tech stack badges */}
             <div className="flex flex-wrap gap-2 mt-4">
-              {['Terraform', 'AWS EC2', 'Docker', 'Jenkins', 'New Relic'].map((tech) => (
+              {['Terraform', 'AWS EC2', 'Docker', 'Jenkins', 'New Relic', 'Power Apps'].map((tech) => (
                 <span
                   key={tech}
                   className="px-3 py-1 rounded-full bg-gray-800/60 border border-gray-700 text-gray-400 text-xs"

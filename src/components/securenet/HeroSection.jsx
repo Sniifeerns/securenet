@@ -86,7 +86,8 @@ export default function HeroSection() {
             provisionada con <span className="text-purple-400 font-medium">Terraform</span>, 
             orquestada con <span className="text-blue-400 font-medium">Docker Compose</span>, 
             automatizada con <span className="text-yellow-400 font-medium">Jenkins CI/CD</span> y 
-            monitorizada en tiempo real con <span className="text-green-400 font-medium">New Relic</span>.
+            monitorizada en tiempo real con <span className="text-green-400 font-medium">New Relic</span>, 
+            con operación final simplificada desde <span className="text-indigo-400 font-medium">Power Apps</span>.
           </motion.p>
 
           {/* Tech Pills */}
@@ -102,6 +103,7 @@ export default function HeroSection() {
               { name: 'Docker', color: 'from-blue-500/20 to-blue-600/20 border-blue-500/40 text-blue-300' },
               { name: 'Jenkins', color: 'from-red-500/20 to-red-600/20 border-red-500/40 text-red-300' },
               { name: 'New Relic', color: 'from-green-500/20 to-green-600/20 border-green-500/40 text-green-300' },
+              { name: 'Power Apps', color: 'from-indigo-500/20 to-indigo-600/20 border-indigo-500/40 text-indigo-300' },
             ].map((tech) => (
               <span
                 key={tech.name}

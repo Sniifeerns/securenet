@@ -1,7 +1,7 @@
 resource "aws_ecr_repository" "api" {
   name                 = "securenet-api"
   image_tag_mutability = "MUTABLE"
-  force_delete         = true 
+  force_delete         = true
 }
 
 resource "aws_ecr_repository" "frontend" {

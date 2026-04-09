@@ -21,8 +21,8 @@ resource "aws_iam_role_policy_attachment" "jenkins_ecr_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "jenkins_ec2_readonly" {
-    role       = aws_iam_role.jenkins_role.name
-    policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
+  role       = aws_iam_role.jenkins_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
 }
 
 resource "aws_iam_instance_profile" "jenkins_ecr" {

@@ -72,6 +72,16 @@ const cloudStack = [
     bgColor: "from-cyan-500/10 to-teal-500/10",
     borderColor: "border-cyan-500/30",
     features: ["Least privilege", "Network isolation", "Encryption at rest"]
+  },
+  {
+    icon: Smartphone,
+    title: "Operación Simplificada",
+    subtitle: "Power Apps",
+    description: "Capa final de operación para tareas sencillas sobre EC2 y contenedores, con acciones controladas y monitorización ligera.",
+    color: "from-indigo-500 to-blue-600",
+    bgColor: "from-indigo-500/10 to-blue-500/10",
+    borderColor: "border-indigo-500/30",
+    features: ["Start/Stop EC2", "Restart contenedores", "Vista ligera de estado"]
   }
 ];
 
