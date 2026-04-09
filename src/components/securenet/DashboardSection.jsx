@@ -3,13 +3,8 @@ import { motion } from "framer-motion";
 import {
   Cpu,
   MemoryStick,
-  Activity,
   ShieldAlert,
-  ShieldCheck,
   Server,
-  Lock,
-  Globe,
-  Workflow,
   HardDrive,
   Gauge,
   Container,
@@ -52,15 +47,6 @@ export default function DashboardSection() {
   const containers = data?.containers ?? [];
   const threats = data?.threats ?? 0;
   const hasWarning = data?.warning;
-
-  const services = [
-    { name: "HTTPS/SSL", icon: Lock, up: true },
-    { name: "Tailscale VPN", icon: Globe, up: true },
-    { name: "n8n Automation", icon: Workflow, up: true },
-    { name: "Firewall", icon: ShieldCheck, up: true },
-    { name: "DHCP Failover", icon: Server, up: true },
-    { name: "Reverse Proxy", icon: Activity, up: true },
-  ];
 
   return (
     <section id="dashboard" className="relative py-20 px-4">
@@ -270,51 +256,6 @@ export default function DashboardSection() {
           </div>
         </motion.div>
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            SECCIÓN 3: VLANs y Servicios
-        ═══════════════════════════════════════════════════════════════════ */}
-        <motion.div 
-          className="grid lg:grid-cols-2 gap-6"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="rounded-2xl border border-cyan-500/20 bg-slate-900/40 p-6 backdrop-blur">
-            <h3 className="text-2xl font-bold text-white mb-4">Estado de VLANs</h3>
-            <div className="space-y-3 text-slate-200">
-              <Row label="VLAN 10 - Admin" sub="172.16.10.0/24" speed="ACTIVE" />
-              <Row label="VLAN 20 - Users" sub="172.16.20.0/24" speed="ACTIVE" />
-              <Row label="VLAN 30 - Servers" sub="172.16.30.0/24" speed="ACTIVE" />
-              <Row label="DMZ" sub="172.16.40.0/24" speed="ACTIVE" />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-cyan-500/20 bg-slate-900/40 p-6 backdrop-blur">
-            <h3 className="text-2xl font-bold text-white mb-4">Estado de Servicios</h3>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {services.map((s) => {
-                const Icon = s.icon;
-                return (
-                  <div
-                    key={s.name}
-                    className="rounded-xl border border-slate-700 bg-slate-800/40 px-4 py-3 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 text-cyan-300" />
-                      <span className="text-slate-100">{s.name}</span>
-                    </div>
-                    <span
-                      className={`w-2.5 h-2.5 rounded-full ${
-                        s.up ? "bg-emerald-400" : "bg-red-400"
-                      }`}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );
@@ -413,14 +354,3 @@ function ContainerCard({ container }) {
   );
 }
 
-function Row({ label, sub, speed }) {
-  return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/35 px-4 py-3 flex items-center justify-between">
-      <div>
-        <p className="text-white font-medium">{label}</p>
-        <p className="text-slate-400 text-sm">{sub}</p>
-      </div>
-      <span className="text-emerald-300 text-sm">{speed}</span>
-    </div>
-  );
-}
