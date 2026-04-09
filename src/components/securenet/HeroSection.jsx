@@ -83,6 +83,9 @@ export default function HeroSection() {
             transition={{ delay: 0.5 }}
           >
             Infraestructura moderna desplegada en <span className="text-orange-400 font-medium">AWS EC2</span>, 
+            expuesta mediante <span className="text-sky-400 font-medium">Route 53</span> y 
+            protegida con <span className="text-emerald-400 font-medium">ACM SSL/TLS</span> sobre 
+            <span className="text-amber-400 font-medium"> Application Load Balancer</span>, 
             provisionada con <span className="text-purple-400 font-medium">Terraform</span>, 
             orquestada con <span className="text-blue-400 font-medium">Docker Compose</span>, 
             automatizada con <span className="text-yellow-400 font-medium">Jenkins CI/CD</span> y 
@@ -100,6 +103,9 @@ export default function HeroSection() {
             {[
               { name: 'Terraform', color: 'from-purple-500/20 to-purple-600/20 border-purple-500/40 text-purple-300' },
               { name: 'AWS EC2', color: 'from-orange-500/20 to-orange-600/20 border-orange-500/40 text-orange-300' },
+              { name: 'Route 53', color: 'from-sky-500/20 to-cyan-600/20 border-sky-500/40 text-sky-300' },
+              { name: 'ACM SSL', color: 'from-emerald-500/20 to-green-600/20 border-emerald-500/40 text-emerald-300' },
+              { name: 'ALB', color: 'from-amber-500/20 to-orange-600/20 border-amber-500/40 text-amber-300' },
               { name: 'Docker', color: 'from-blue-500/20 to-blue-600/20 border-blue-500/40 text-blue-300' },
               { name: 'Jenkins', color: 'from-red-500/20 to-red-600/20 border-red-500/40 text-red-300' },
               { name: 'New Relic', color: 'from-green-500/20 to-green-600/20 border-green-500/40 text-green-300' },

@@ -9,7 +9,9 @@ import {
   Workflow,
   Shield,
   Zap,
-  Smartphone
+  Smartphone,
+  Globe,
+  Lock
 } from 'lucide-react';
 
 const cloudStack = [
@@ -32,6 +34,36 @@ const cloudStack = [
     bgColor: "from-orange-500/10 to-amber-500/10",
     borderColor: "border-orange-500/30",
     features: ["Auto Scaling Groups", "Elastic Load Balancing", "Security Groups"]
+  },
+  {
+    icon: Globe,
+    title: "DNS Gestionado",
+    subtitle: "Amazon Route 53",
+    description: "El dominio público resuelve de forma fiable y rápida hacia la entrada correcta en AWS, mejorando disponibilidad y control del tráfico.",
+    color: "from-sky-500 to-cyan-600",
+    bgColor: "from-sky-500/10 to-cyan-500/10",
+    borderColor: "border-sky-500/30",
+    features: ["Hosted zones", "Registros A/AAAA/CNAME", "Resolución de baja latencia"]
+  },
+  {
+    icon: Lock,
+    title: "Seguridad TLS",
+    subtitle: "AWS Certificate Manager",
+    description: "Certificados SSL/TLS administrados con ACM para cifrar el tráfico de usuarios extremo a extremo sin coste adicional de certificados.",
+    color: "from-emerald-500 to-green-600",
+    bgColor: "from-emerald-500/10 to-green-500/10",
+    borderColor: "border-emerald-500/30",
+    features: ["HTTPS automático", "Renovación gestionada", "Cifrado en tránsito"]
+  },
+  {
+    icon: Shield,
+    title: "Alta Disponibilidad",
+    subtitle: "Application Load Balancer",
+    description: "Un ALB recibe el tráfico público, aplica health checks y distribuye peticiones limpias a las instancias para proteger y estabilizar el servicio.",
+    color: "from-amber-500 to-orange-600",
+    bgColor: "from-amber-500/10 to-orange-500/10",
+    borderColor: "border-amber-500/30",
+    features: ["Health checks", "Balanceo L7", "Punto de entrada único"]
   },
   {
     icon: Container,
@@ -90,8 +122,9 @@ const pipelineSteps = [
   { step: 2, name: "Build", icon: Container, description: "Docker build & push to ECR" },
   { step: 3, name: "Test", icon: Zap, description: "Lint, unit tests, security scan" },
   { step: 4, name: "Deploy", icon: Cloud, description: "Deploy a EC2 via SSH" },
-  { step: 5, name: "Monitor", icon: Activity, description: "Métricas en New Relic" },
-  { step: 6, name: "Operate", icon: Smartphone, description: "Power Apps: acciones simples + vista ligera" },
+  { step: 5, name: "Expose", icon: Globe, description: "Route 53 + ALB + ACM en producción" },
+  { step: 6, name: "Monitor", icon: Activity, description: "Métricas en New Relic" },
+  { step: 7, name: "Operate", icon: Smartphone, description: "Power Apps: acciones simples + vista ligera" },
 ];
 
 export default function CloudArchitectureSection() {

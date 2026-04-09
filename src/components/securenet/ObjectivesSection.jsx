@@ -82,10 +82,11 @@ const objectives = [
 
 const milestones = [
   { phase: "Fase 1", title: "Infraestructura Base", description: "Terraform + AWS EC2 configurados", completed: true },
-  { phase: "Fase 2", title: "Containerización", description: "Docker Compose multi-servicio", completed: true },
-  { phase: "Fase 3", title: "CI/CD Pipeline", description: "Jenkins pipeline automatizado", completed: true },
-  { phase: "Fase 4", title: "Observabilidad", description: "New Relic integrado", completed: true },
-  { phase: "Fase 5", title: "Operación con Power Apps", description: "Acciones simples + mini monitor", completed: true },
+  { phase: "Fase 2", title: "Edge Público AWS", description: "Route 53 + ACM + ALB en producción", completed: true },
+  { phase: "Fase 3", title: "Containerización", description: "Docker Compose multi-servicio", completed: true },
+  { phase: "Fase 4", title: "CI/CD Pipeline", description: "Jenkins pipeline automatizado", completed: true },
+  { phase: "Fase 5", title: "Observabilidad", description: "New Relic integrado", completed: true },
+  { phase: "Fase 6", title: "Operación con Power Apps", description: "Acciones simples + mini monitor", completed: true },
 ];
 
 export default function ObjectivesSection() {
@@ -122,7 +123,7 @@ export default function ObjectivesSection() {
           viewport={{ once: true }}
         >
           <h3 className="text-xl font-semibold text-white mb-6 text-center">Roadmap de Implementación</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {milestones.map((milestone, index) => (
               <motion.div
                 key={milestone.phase}
@@ -230,7 +231,7 @@ export default function ObjectivesSection() {
                 <p className="text-gray-400 text-sm">Objetivos</p>
               </div>
               <div className="text-center px-6 py-3 rounded-xl bg-gray-800/50 border border-gray-700">
-                <p className="text-3xl font-bold text-cyan-400">5</p>
+                <p className="text-3xl font-bold text-cyan-400">6</p>
                 <p className="text-gray-400 text-sm">Fases</p>
               </div>
               <div className="text-center px-6 py-3 rounded-xl bg-gray-800/50 border border-gray-700">
