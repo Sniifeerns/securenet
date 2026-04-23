@@ -102,7 +102,7 @@ docker compose down
 
 | Problema | Solución |
 |----------|----------|
-| `newrelic-infra` sale con error | Comenta el servicio en `docker-compose.yml` o añade credenciales válidas en `.env` |
+| Métricas de New Relic vacías | Ejecuta `sudo /usr/local/bin/securenet-sync-newrelic.sh` en la EC2 App y revisa `systemctl status newrelic-infra` |
 | `gateway` falla por puerto 80/443 ocupado | Detén Apache/IIS: `sudo systemctl stop apache2` o `net stop was /y` |
 | `Error: no such file cert.pem` | Ejecuta `bash scripts/generate-certs.sh` |
 
@@ -621,6 +621,7 @@ terraform output ecr_api_url
 terraform output ecr_frontend_url
 terraform output ecr_gateway_url
 ```
+![Terraform plan](./img/terraform_plan.png)
 
 #### Paso 5: Actualizar Pipeline de Jenkins para Push a ECR
 

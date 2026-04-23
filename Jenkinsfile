@@ -60,49 +60,38 @@ pipeline {
             }
         }
         
-        stage('Despliegue e Inyección del .env') {
+        stage('Despliegue seguro en App EC2') {
             steps {
-                // 1. Invocamos LAS TRES credenciales secretas
-                withCredentials([
-                    string(credentialsId: 'NR_LICENSE_KEY', variable: 'NR_LICENSE'),
-                    string(credentialsId: 'NR_ACCOUNT_ID', variable: 'NR_ACCOUNT'),
-                    string(credentialsId: 'NR_API_KEY', variable: 'NR_API')
-                ]) {
-                    // 2. Usamos el plugin sshagent con la credencial que creamos en Jenkins
-                    sshagent(credentials: ['id_jenkins']) {
-                        sh '''
-                            # Buscamos la IP privada de la maquina de Docker
-                            APP_IP=$(aws ec2 describe-instances \
-                                --region ${AWS_REGION} \
-                                --filters "Name=tag:Name,Values=docker-aws" "Name=instance-state-name,Values=running" \
-                                --query "Reservations[0].Instances[0].PrivateIpAddress" \
-                                --output text)
+                // Jenkins no maneja claves de New Relic: la App EC2 las obtiene desde Secrets Manager
+                sshagent(credentials: ['id_jenkins']) {
+                    sh '''
+                        # Buscamos la IP privada de la maquina de Docker
+                        APP_IP=$(aws ec2 describe-instances \
+                            --region ${AWS_REGION} \
+                            --filters "Name=tag:Name,Values=docker-aws" "Name=instance-state-name,Values=running" \
+                            --query "Reservations[0].Instances[0].PrivateIpAddress" \
+                            --output text)
+                        
+                        echo "Desplegando en la máquina App con IP interna: $APP_IP"
+                        
+                        # Copiamos el archivo de orquestación al servidor
+                        scp -o StrictHostKeyChecking=no docker-compose.ecr.yml ec2-user@${APP_IP}:/opt/app/docker-compose.yml
+                        
+                        # Nos conectamos por SSH para encender todo
+                        ssh -o StrictHostKeyChecking=no ec2-user@${APP_IP} "
+                            cd /opt/app
                             
-                            echo "Desplegando en la máquina App con IP interna: $APP_IP"
+                            # Sincroniza secretos y configura New Relic host-agent
+                            sudo /usr/local/bin/securenet-sync-newrelic.sh
                             
-                            # 3. Copiamos el archivo de orquestación al servidor
-                            scp -o StrictHostKeyChecking=no docker-compose.ecr.yml ec2-user@${APP_IP}:/opt/app/docker-compose.yml
+                            # AWS Login en la máquina destino
+                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_API%/*}
                             
-                            # 4. Nos conectamos por SSH para encender todo
-                            ssh -o StrictHostKeyChecking=no ec2-user@${APP_IP} "
-                                cd /opt/app
-                                
-                                # Creamos el archivo .env
-                                echo 'NODE_ENV=production' > .env
-                                echo 'VITE_METRICS_API=/api' >> .env
-                                echo 'NEW_RELIC_LICENSE_KEY=${NR_LICENSE}' >> .env
-                                echo 'NEW_RELIC_ACCOUNT_ID=${NR_ACCOUNT}' >> .env
-                                echo 'NEW_RELIC_API_KEY=${NR_API}' >> .env
-                                
-                                # AWS Login en la máquina destino
-                                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_API%/*}
-                                
-                                # Descargamos las imágenes nuevas y levantamos la App
-                                docker compose pull
-                                docker compose up -d
-                            "
-                        '''
-                    }
+                            # Descargamos las imágenes nuevas y levantamos la App
+                            docker compose pull
+                            docker compose up -d --remove-orphans
+                        "
+                    '''
                 }
             }
         }

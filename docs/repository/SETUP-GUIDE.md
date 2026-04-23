@@ -48,7 +48,7 @@ docker compose down
 ```
 
 ✅ **Importante**: 
-- Si no tienes credenciales de New Relic, comenta o elimina el servicio `newrelic-infra` en `docker-compose.yml`
+- Si no tienes credenciales de New Relic, deja variables placeholder en `.env` para local o desactiva temporalmente métricas en el dashboard.
 - Los certificados de prueba generarán avisos de seguridad (es normal en desarrollo local)
 - Si algún contenedor falla, revisa los logs con `docker compose logs <nombre-servicio>`
 

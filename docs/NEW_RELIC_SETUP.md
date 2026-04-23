@@ -1,177 +1,92 @@
-# 🔧 Configuración de New Relic
+# New Relic Setup (Host Agent + AWS Secrets Manager)
 
-## Obtener credenciales de New Relic
+Este proyecto ya no usa `newrelic-infra` en Docker.
 
-### 1. License Key (NRIA_LICENSE_KEY)
+Ahora el agente de infraestructura de New Relic se instala directamente en la instancia EC2 `docker-aws` y las credenciales se obtienen de forma segura desde AWS Secrets Manager.
 
-Esta clave se usa para el agente de infraestructura que monitorea el host.
+## Arquitectura de credenciales
 
-1. Ve a https://one.newrelic.com/
-2. Click en tu nombre (esquina superior derecha) → **Administration**
-3. En el menú lateral: **API Keys**
-4. Busca la sección **Ingest - License**
-5. Copia la clave (comienza con algo como `eu01xx...` para Europa)
+1. Terraform crea el secreto en AWS Secrets Manager (solo metadata).
+2. El valor del secreto se guarda en AWS (CLI o consola), no en Git ni en `tfstate`.
+3. La EC2 de app (`docker-aws`) lee ese secreto con su rol IAM.
+4. Un script local (`/usr/local/bin/securenet-sync-newrelic.sh`) actualiza:
+   - `/etc/newrelic-infra.yml` (agente host)
+   - `/opt/app/.env` (variables para `docker compose`)
 
-```bash
-# En tu .env
-NEW_RELIC_LICENSE_KEY=eu01xf1515937b5bd9bf63c6448fc57191c7NRAL
-```
+## 1) Aplicar Terraform
 
-### 2. Account ID (NEW_RELIC_ACCOUNT_ID)
-
-Este ID identifica tu cuenta en New Relic.
-
-1. Estando en https://one.newrelic.com/
-2. Mira la URL: `https://one.newrelic.com/accounts/{ACCOUNT_ID}/...`
-3. El número después de `/accounts/` es tu Account ID
+Desde `terraform/`:
 
 ```bash
-# En tu .env
-NEW_RELIC_ACCOUNT_ID=7875275
+terraform init
+terraform apply
 ```
 
-### 3. API Key (NEW_RELIC_API_KEY) - **NUEVO**
+Terraform creará:
 
-Esta clave se usa para hacer queries a la API de New Relic (NerdGraph/GraphQL).
+- `aws_secretsmanager_secret.securenet_newrelic`
+- política IAM de lectura del secreto
+- attachment al rol de EC2 usado por Jenkins/App
 
-1. Ve a https://one.newrelic.com/
-2. Click en tu nombre (esquina superior derecha) → **Administration** → **API Keys**
-3. Click en **Create a key** (botón arriba a la derecha)
-4. Configuración:
-   - **Key type**: User
-   - **Name**: `securenet-metrics-api` (o el nombre que prefieras)
-   - **Description**: API key for SecureNet metrics dashboard
-5. Click en **Create a key**
-6. **¡IMPORTANTE!** Copia la clave inmediatamente (solo se muestra una vez)
-   - Formato: `NRAK-XXXXXXXXXXXXXXXXXXXXX`
+## 2) Guardar el valor del secreto en AWS
 
-```bash
-# En tu .env
-NEW_RELIC_API_KEY=NRAK-XXXXXXXXXXXXXXXXXXXXX
-```
-
-### 4. Región y ventana de consulta (opcional, recomendado)
-
-Para evitar que el dashboard quede "ciego" cuando hay latencia de ingesta:
-
-```bash
-# En tu .env
-NEW_RELIC_REGION=eu
-METRICS_LOOKBACK_MINUTES=5
-```
-
-- `NEW_RELIC_REGION`: `eu` o `us` (el servidor usa fallback automático entre endpoints).
-- `METRICS_LOOKBACK_MINUTES`: amplía la ventana NRQL para capturar datos recientes aunque no lleguen en 1 minuto exacto.
-
-## Archivo .env completo
-
-Tu archivo `.env` debe verse así:
-
-```bash
-VITE_METRICS_API=/api
-
-NEW_RELIC_LICENSE_KEY=eu01xf1515937b5bd9bf63c6448fc57191c7NRAL
-NEW_RELIC_ACCOUNT_ID=7875275
-NEW_RELIC_API_KEY=NRAK-XXXXXXXXXXXXXXXXXXXXX
-NEW_RELIC_REGION=eu
-METRICS_LOOKBACK_MINUTES=5
-```
-
-## Verificar que funciona
-
-### 1. Reiniciar el contenedor de New Relic Infra
-
-```bash
-docker compose restart newrelic-infra
-docker compose logs newrelic-infra
-```
-
-Deberías ver:
-```
-time="..." level=info msg="New Relic infrastructure agent initialized"
-```
-
-### 2. Reiniciar el contenedor de la API
-
-```bash
-docker compose restart api
-docker compose logs api
-```
-
-### 3. Probar el endpoint de métricas
-
-```bash
-curl -k https://localhost/api/metrics
-```
-
-Deberías recibir JSON con esta estructura:
+Formato JSON requerido:
 
 ```json
 {
-  "ok": true,
-  "host": {
-    "cpu": "4.2",
-    "memory": "45.6",
-    "disk": "23.1",
-    "netInBps": 12345,
-    "netOutBps": 6789,
-    "load1": "1.5",
-    "load5": "1.2"
-  },
-  "containers": [
-    {
-      "name": "securenet-gateway-1",
-      "cpu": "2.1",
-      "memory": "128"
-    },
-    {
-      "name": "securenet-frontend-1",
-      "cpu": "0.5",
-      "memory": "64"
-    }
-  ],
-  "threats": 0,
-  "updatedAt": "2026-04-01T15:45:00.000Z"
+  "NEW_RELIC_LICENSE_KEY": "eu01x...NRAL",
+  "NEW_RELIC_ACCOUNT_ID": "1234567",
+  "NEW_RELIC_API_KEY": "NRAK-XXXXXXXXXXXXXXXXXXXX",
+  "NEW_RELIC_REGION": "eu",
+  "METRICS_LOOKBACK_MINUTES": "5"
 }
 ```
 
-## Troubleshooting
+Ejemplo por CLI:
 
-### Error: "Missing NEW_RELIC_API_KEY"
+```bash
+aws secretsmanager put-secret-value \
+  --region eu-west-3 \
+  --secret-id securenet/newrelic \
+  --secret-string file://newrelic-secret.json
+```
 
-- Asegúrate de que el archivo `.env` existe en la raíz del proyecto
-- Verifica que la variable `NEW_RELIC_API_KEY` está definida
-- Reinicia el contenedor de API: `docker compose restart api`
+## 3) Sincronizar secretos en la EC2 de App
 
-### Error: "New Relic API error: 403"
+La pipeline de Jenkins ya llama automáticamente:
 
-- La API Key es inválida o ha expirado
-- Crea una nueva API Key siguiendo los pasos anteriores
-- Verifica que la key tiene permisos de NerdGraph
+```bash
+sudo /usr/local/bin/securenet-sync-newrelic.sh
+```
 
-### No se ven métricas del host
+Si quieres lanzarlo manualmente en la instancia `docker-aws`:
 
-- Verifica que el contenedor `newrelic-infra` está corriendo: `docker compose ps`
-- Revisa los logs: `docker compose logs newrelic-infra`
-- Espera 1-2 minutos para que New Relic empiece a recibir datos
-- Verifica en New Relic: https://one.newrelic.com/infrastructure
+```bash
+sudo /usr/local/bin/securenet-sync-newrelic.sh
+sudo systemctl status newrelic-infra
+```
 
-### No se ven contenedores
+## 4) Verificar métricas
 
-- Asegúrate de que Docker está corriendo
-- Verifica que `/var/run/docker.sock` está montado en el contenedor de New Relic
-- Los contenedores pueden tardar unos minutos en aparecer en New Relic
+```bash
+curl -k https://<host>/api/health
+curl -k https://<host>/api/metrics
+```
 
-## Permisos de la API Key
+## Comprobaciones útiles
 
-La API Key debe tener acceso a:
-- ✅ **NerdGraph** - Para hacer queries GraphQL
-- ✅ **Read access** - Para leer métricas
+```bash
+# Agente host
+sudo systemctl status newrelic-infra
+sudo journalctl -u newrelic-infra -n 100 --no-pager
 
-Si creaste la key como "User Key", ya tiene estos permisos por defecto.
+# Variables de runtime en la app host
+sudo ls -l /opt/app/.env
+sudo head -n 5 /opt/app/.env
+```
 
-## Referencias
+## Notas de seguridad
 
-- [New Relic API Keys Documentation](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/)
-- [New Relic Infrastructure Agent](https://docs.newrelic.com/docs/infrastructure/install-infrastructure-agent/get-started/install-infrastructure-agent/)
-- [NerdGraph API Explorer](https://api.newrelic.com/graphiql)
+- No guardar claves reales en `.env` del repositorio.
+- No guardar claves de New Relic en Jenkins Credentials para este flujo.
+- Rotación recomendada: actualizar el secreto en AWS y re-ejecutar `securenet-sync-newrelic.sh`.

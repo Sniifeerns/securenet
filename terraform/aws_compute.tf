@@ -1,6 +1,7 @@
 resource "aws_instance" "jenkins_aws" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t2.medium"
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t2.medium"
+  associate_public_ip_address = true
   tags = {
     Name = "jenkins-aws"
   }
@@ -27,7 +28,7 @@ resource "aws_security_group" "jenkins" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.ssh_allowed_cidr]
   }
 
   egress {
@@ -45,12 +46,16 @@ resource "aws_key_pair" "ssh_key" {
 }
 
 resource "aws_instance" "docker_aws" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t2.small"
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t2.small"
+  associate_public_ip_address = true
   tags = {
     Name = "docker-aws"
   }
-  user_data                   = file("${path.module}/scripts/docker_app.sh")
+  user_data = templatefile("${path.module}/scripts/docker_app.sh", {
+    aws_region          = var.aws_region
+    new_relic_secret_id = aws_secretsmanager_secret.securenet_newrelic.name
+  })
   user_data_replace_on_change = true
   vpc_security_group_ids      = [aws_security_group.docker.id]
   key_name                    = aws_key_pair.ssh_key.key_name
@@ -63,15 +68,15 @@ resource "aws_security_group" "docker" {
   name        = "docker"
   description = "Security group for Docker/App instance"
 
-  # SSH para que Jenkins pueda entrar
+  
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.ssh_allowed_cidr]
   }
 
-  # HTTP para tu web
+  
   ingress {
     from_port   = 80
     to_port     = 80
@@ -79,7 +84,7 @@ resource "aws_security_group" "docker" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # HTTPS para tu web
+  
   ingress {
     from_port   = 443
     to_port     = 443
@@ -119,6 +124,12 @@ resource "aws_iam_instance_profile" "jenkins_instance_profile" {
   name = "jenkins_instance_profile"
   role = aws_iam_role.jenkins_role.name
 }
+
+resource "aws_iam_role_policy_attachment" "jenkins_secretsmanager_read" {
+  role       = aws_iam_role.jenkins_role.name
+  policy_arn = aws_iam_policy.securenet_newrelic_secrets_read.arn
+}
+
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]

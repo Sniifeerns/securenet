@@ -8,6 +8,7 @@ environment = "dev"
 
 aws_region = "eu-west-3"
 oci_region = "eu-madrid-1"
+new_relic_secret_name = "securenet/newrelic"
 
 # OCI - Reemplaza con tus IDs reales
 oci_compartment_id      = "ocid1.tenancy.oc1..TU_COMPARTMENT_ID"
