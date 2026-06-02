@@ -15,7 +15,7 @@ dnf install -y docker git curl jq awscli --allowerasing
 
 # 3. Instalar New Relic Infrastructure Agent en el host
 curl -fsSL -o /etc/yum.repos.d/newrelic-infra.repo \
-  https://download.newrelic.com/infrastructure_agent/linux/yum/el/9/x86_64/newrelic-infra.repo
+  https://download.newrelic.com/infrastructure_agent/linux/yum/amazonlinux/2023/x86_64/newrelic-infra.repo
 dnf install -y newrelic-infra
 
 # 4. Iniciar Docker y asegurar que se levanta si la máquina se reinicia
@@ -89,6 +89,7 @@ chown ec2-user:ec2-user /opt/app/.env
 
 systemctl enable --now newrelic-infra
 systemctl restart newrelic-infra
+systemctl --no-pager --full status newrelic-infra || true
 
 echo "New Relic sincronizado desde Secrets Manager."
 EOF

@@ -1,17 +1,18 @@
 # ========================
-# SECURENET - Variables de Terraform
+# SECURENET CLOUD - Variables de Terraform
 # ========================
 # Copia este archivo como terraform.tfvars y rellena con tus valores reales.
 # NUNCA subas terraform.tfvars al repositorio.
 
 environment = "dev"
 
-aws_region = "eu-west-3"
-oci_region = "eu-madrid-1"
-new_relic_secret_name = "securenet/newrelic"
+aws_region       = "eu-west-3"
+ssh_allowed_cidr = "TU_IP_PUBLICA/32"
+ssh_public_key   = "ssh-ed25519 TU_CLAVE_PUBLICA"
 
-# OCI - Reemplaza con tus IDs reales
-oci_compartment_id      = "ocid1.tenancy.oc1..TU_COMPARTMENT_ID"
-oci_image_id            = "ocid1.image.oc1.eu-madrid-1.TU_IMAGE_ID"
-oci_availability_domain = "TU_AVAILABILITY_DOMAIN"
-oci_subnet_id           = "ocid1.subnet.oc1.eu-madrid-1.TU_SUBNET_ID"
+new_relic_secret_name    = "securenet/newrelic"
+new_relic_license_key    = "TU_NEW_RELIC_LICENSE_KEY"
+new_relic_account_id     = "TU_NEW_RELIC_ACCOUNT_ID"
+new_relic_api_key        = "TU_NEW_RELIC_API_KEY"
+new_relic_region         = "EU"
+metrics_lookback_minutes = 30

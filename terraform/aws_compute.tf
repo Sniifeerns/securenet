@@ -68,7 +68,7 @@ resource "aws_security_group" "docker" {
   name        = "docker"
   description = "Security group for Docker/App instance"
 
-  
+
   ingress {
     from_port   = 22
     to_port     = 22
@@ -76,7 +76,7 @@ resource "aws_security_group" "docker" {
     cidr_blocks = [var.ssh_allowed_cidr]
   }
 
-  
+
   ingress {
     from_port   = 80
     to_port     = 80
@@ -84,7 +84,7 @@ resource "aws_security_group" "docker" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  
+
   ingress {
     from_port   = 443
     to_port     = 443
