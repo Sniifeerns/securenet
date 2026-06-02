@@ -1,456 +1,395 @@
-# 🔐 SecureNet Lab
+# SecureNet
 
-**Proyecto de Innovación - Grupo B**  
-**2º ASIR - IES Gregorio Prieto**
+SecureNet es un proyecto personal desarrollado y mantenido por **Javier Naranjo**.
 
-> **📘 Repositorio público de portfolio** - Este repo contiene el código fuente limpio del proyecto, sin claves privadas ni credenciales.  
-> 🚀 **[Guía de configuración rápida →](docs/repository/SETUP-GUIDE.md)**
+El objetivo del proyecto es construir una plataforma web desplegable en cloud que combine frontend, API, gateway, automatizacion, CI/CD, observabilidad e infraestructura como codigo. El foco actual esta en tener un entorno reproducible, seguro y facil de reconstruir desde cero con Terraform, Docker, Jenkins, AWS y New Relic.
 
----
-
-## 📌 Descripción del proyecto
-
-**SecureNet Lab** es un proyecto de innovación desarrollado en el ciclo de **Administración de Sistemas Informáticos en Red (ASIR)** del **IES Gregorio Prieto**.
-
-El objetivo ha sido diseñar e implementar una infraestructura de red segura y profesional, simulando un entorno empresarial real con buenas prácticas de:
-
-- Ciberseguridad
-- Administración de redes
-- Despliegue de servicios
-- Monitorización en tiempo real
-
-Se ha construido un laboratorio funcional con segmentación por VLAN, DMZ protegida, ACLs, publicación web, VPN y observabilidad.
+Este repositorio contiene codigo fuente, configuracion de despliegue y plantillas. No contiene credenciales reales, claves privadas, ficheros `.env`, `terraform.tfvars` ni estados de Terraform.
 
 ---
 
-## 🎯 Objetivos del proyecto
+## Objetivos
 
-- Diseñar una arquitectura de red segmentada por VLAN.
-- Implementar una **DMZ aislada** para servicios expuestos.
-- Configurar enrutamiento inter-VLAN.
-- Aplicar **ACLs de seguridad** entre zonas.
-- Implementar NAT y Port Forwarding.
-- Publicar un sitio web con HTTPS.
-- Configurar acceso remoto seguro por VPN (Tailscale).
-- Implementar **DHCP con failover**.
-- Desplegar servicios de automatización con **n8n**.
-- Integrar monitorización en tiempo real con **Netdata + API propia**.
-- Containerizar y automatizar despliegues (**Docker + CI/CD**).
+- Crear una aplicacion web moderna con React y Vite.
+- Exponer la aplicacion mediante un gateway Nginx como punto unico de entrada.
+- Separar servicios en contenedores Docker: frontend, API, gateway y n8n.
+- Automatizar builds y despliegues con Jenkins.
+- Publicar imagenes Docker en AWS ECR.
+- Provisionar infraestructura AWS con Terraform.
+- Gestionar credenciales de New Relic con AWS Secrets Manager.
+- Instalar y configurar New Relic Infrastructure Agent automaticamente en la maquina Docker.
+- Mantener el repositorio limpio de secretos y estado local.
+- Poder destruir y recrear la infraestructura completa con `terraform destroy` y `terraform apply`.
 
 ---
 
-## 🗂 Estructura del repositorio
+## Arquitectura Actual
 
 ```text
-/securenet
-  /src                 -> codigo principal del frontend
-  /server              -> API de metricas (Node/Express)
-  /terraform           -> infraestructura como codigo
-  /docker              -> Dockerfiles y configuracion de despliegue
-  /public              -> recursos estaticos
-  /scripts             -> automatizaciones y utilidades
-  /docs                -> documentacion tecnica y operativa
-    /architecture      -> diagramas y recursos visuales
-  README.md            -> documentacion general del proyecto
+Usuario
+  |
+  v
+Route 53 + ALB + HTTPS
+  |
+  v
+EC2 docker-aws
+  |
+  +-- gateway  (Nginx reverse proxy)
+  +-- frontend (React/Vite servido por Nginx)
+  +-- api      (Node.js/Express)
+  +-- n8n      (automatizacion)
+  |
+  +-- newrelic-infra agent en el host
+
+EC2 jenkins-aws
+  |
+  +-- Jenkins
+  +-- Build de imagenes
+  +-- Push a AWS ECR
+  +-- Deploy por SSH hacia docker-aws
+```
+
+La infraestructura AWS se define en `terraform/` y el despliegue de contenedores se define en:
+
+- `docker-compose.yml`: entorno local.
+- `docker-compose.ecr.yml`: entorno desplegado desde imagenes en ECR.
+
+---
+
+## Tecnologias
+
+### Frontend
+
+- React 18
+- Vite
+- Tailwind CSS
+- Radix UI
+- Framer Motion
+- Recharts
+- Lucide React
+
+### Backend y API
+
+- Node.js
+- Express
+- API de metricas y healthcheck
+- Variables de entorno para integracion con New Relic
+
+### Contenedores
+
+- Docker
+- Docker Compose
+- Nginx como gateway
+- Imagenes separadas para frontend, API y gateway
+- n8n como servicio de automatizacion
+
+### Cloud e infraestructura
+
+- AWS EC2
+- AWS ECR
+- AWS IAM
+- AWS ALB
+- AWS ACM
+- AWS Route 53
+- AWS Secrets Manager
+- Terraform
+
+### CI/CD
+
+- Jenkins en EC2
+- Pipeline declarativo con `Jenkinsfile`
+- Build y push de imagenes a ECR
+- Deploy remoto sobre la EC2 Docker mediante SSH
+
+### Observabilidad
+
+- New Relic Infrastructure Agent
+- New Relic API/NerdGraph para metricas
+- Secrets Manager como fuente de credenciales
+- Docker labels para identificar servicios monitorizados
+
+---
+
+## Estructura del Repositorio
+
+```text
+securenet/
+  src/                         Frontend React
+  server/                      API Node/Express
+  docker/                      Dockerfiles y configuracion Nginx
+  terraform/                   Infraestructura AWS como codigo
+  public/                      Recursos estaticos
+  scripts/                     Scripts auxiliares
+  docs/                        Documentacion adicional
+  docker-compose.yml           Compose local
+  docker-compose.ecr.yml       Compose de produccion con imagenes ECR
+  Jenkinsfile                  Pipeline CI/CD
+  README.md                    Documentacion principal
 ```
 
 ---
 
-## 🏗 Arquitectura de red
+## Infraestructura con Terraform
 
-| Segmento | Red | Descripción |
-|---|---|---|
-| VLAN 10 | 172.16.10.0/24 | Soporte |
-| VLAN 20 | 172.16.20.0/24 | Administración |
-| VLAN 30 | 172.16.30.0/24 | Ventas |
-| DMZ (VLAN 40) | 172.16.40.0/24 | Servidores expuestos |
-| Red de tránsito | 10.10.0.0/30 | Comunicación entre routers |
+Terraform crea y gestiona:
 
-### 🔒 Política de seguridad
+- EC2 para Jenkins.
+- EC2 para Docker/App.
+- Security Groups.
+- Key Pair SSH.
+- IAM Roles e Instance Profiles.
+- Repositorios ECR.
+- ALB y Target Group.
+- Certificado ACM validado por DNS.
+- Registro Route 53.
+- Secreto de New Relic en Secrets Manager.
+- Version del secreto con el JSON real de credenciales.
 
-- La **DMZ no puede acceder a las VLAN internas**.
-- Las VLAN internas sí pueden acceder a servicios concretos en DMZ.
-- Internet no puede acceder directamente a la red interna.
-- Exposición pública solo mediante reglas explícitas (Port Forwarding).
-- HTTPS en servicios web.
-- Acceso remoto administrativo por VPN privada.
+Archivos principales:
 
----
+- `terraform/providers.tf`
+- `terraform/variables.tf`
+- `terraform/aws_compute.tf`
+- `terraform/aws_ecr.tf`
+- `terraform/aws_iam.tf`
+- `terraform/alb.tf`
+- `terraform/newrelic.tf`
+- `terraform/scripts/docker_app.sh`
+- `terraform/scripts/jenkins_app.sh`
 
-## 🛡️ Seguridad adicional (Reverse Proxy + CI/CD)
+### Variables locales
 
-Además de la segmentación y ACLs, se reforzó la seguridad a nivel de publicación y despliegue.
-
-### Reverse Proxy como punto único de entrada
-
-- La infraestructura publica servicios únicamente a través de un **Gateway (Reverse Proxy)**.
-- Se centraliza el control de:
-  - **TLS/HTTPS**
-  - **Redirección HTTP -> HTTPS**
-  - **Rutas publicadas** (`/`, `/api/*`)
-  - **Cabeceras de proxy** (`X-Forwarded-For`, `X-Forwarded-Proto`)
-- Esto evita exponer servicios internos directamente y reduce superficie de ataque.
-
-### CI/CD (automatización segura)
-
-- Los despliegues se automatizan con **GitHub Actions**.
-- Se reduce el riesgo de errores manuales.
-- Se asegura trazabilidad: cada despliegue queda ligado a commit y run de Actions.
-- En DMZ/VPN se utiliza un **runner self-hosted** para no abrir SSH al exterior.
-
----
-
-## 🛠 Herramientas y tecnologías utilizadas
-
-### Infraestructura de red
-
-- Cisco 1900
-- Cisco RV340
-- Cisco 2960 / 3560
-- VLANs 802.1Q
-- ACLs
-- NAT
-- Port Forwarding
-
-### Servidores y servicios
-
-- Ubuntu Server
-- Apache2 *(fase inicial; reemplazado por Gateway Nginx en Docker para publicación)*
-- DHCP (ISC DHCP Server con Failover)
-- n8n (automatización)
-- Netdata (monitorización)
-- Node.js + Express (API de métricas)
-- SSH seguro
-- Docker + Docker Compose
-
-### Desarrollo web
-
-- React + Vite
-- TailwindCSS
-- Framer Motion
-- Build estática para producción (`dist`)
-
-### Seguridad y acceso remoto
-
-- Segmentación por VLAN
-- DMZ aislada
-- ACLs personalizadas
-- VPN con Tailscale
-- Restricción de acceso desde WAN
-
----
-
-## 🌐 Servicios implementados
-
-- Web principal del proyecto (SecureNet Lab)
-- Página 404 personalizada
-- Dashboard con métricas en vivo
-- API `/api/metrics` y `/api/health`
-- n8n en servidor
-- DHCP redundante
-- Acceso remoto VPN
-
----
-
-## 📊 Monitorización
-
-Arquitectura de monitorización:
-
-**Frontend React** -> `https://<host>/api/metrics` -> **Gateway Nginx (reverse proxy)** -> **Metrics API (Node/Express)** -> **Netdata (host)**
-
-### Endpoints
-
-- `GET /api/health`
-- `GET /api/metrics`
-
-### Métricas mostradas
-
-- CPU (%)
-- RAM (%)
-- Tráfico de red (entrada/salida)
-- Timestamp de actualización
-
-> Se ajustó el cálculo de CPU para entornos Netdata que no exponen `idle`, sumando estados como `user/system/nice/...`.
-
----
-
-## 🐳 Despliegue Docker + HTTPS + CI/CD
-
-El despliegue evolucionó a un modelo containerizado con Docker Compose, usando **Gateway Nginx** como entrada única para HTTPS y redirección HTTP -> HTTPS.
-
-### Servicios en Docker Compose
-
-- **gateway** (Nginx): entrada única del sistema (`80/443`), redirección y reverse proxy.
-- **frontend**: React build servido por Nginx en contenedor.
-- **api**: Node.js + Express (`/api/health`, `/api/metrics`).
-- **netdata**: en producción se mantiene en host para métricas reales del servidor.
-
-### HTTPS y redirección 80 -> 443
-
-- `http://<host>` -> `301` a `https://<host>`
-- `https://<host>` -> frontend
-- `https://<host>/api/*` -> API de métricas
-
-> En servidor se usa certificado autofirmado (el navegador mostrará aviso de confianza).
-
-### Imágenes en GHCR (producción)
-
-- `ghcr.io/<owner>/securenet-frontend:latest`
-- `ghcr.io/<owner>/securenet-api:latest`
-
-> GHCR requiere `owner` en minúsculas. El workflow lo fuerza con `IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,}`.
-
-### CI/CD con GitHub Actions + runner self-hosted
-
-El servidor está en red privada/VPN, por lo que el runner cloud no llega directamente. Se usa runner self-hosted dentro del entorno.
-
-Flujo:
-
-1. Build + Push de imágenes a GHCR (runner cloud).
-2. Deploy en servidor (runner self-hosted):
-   - `docker compose pull`
-   - `docker compose up -d`
-
-### Verificación rápida
+Crear el archivo local:
 
 ```bash
-# Ver contenedores
-
-docker compose ps
-
-# Comprobar HTTPS y endpoints
-curl -k https://<host>/api/health
-curl -k https://<host>/api/metrics
-
-# Comprobar redirección HTTP -> HTTPS
-curl -I http://<host>
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
 ```
 
-### Incidencias reales resueltas (Docker/CI)
+Rellenar `terraform.tfvars` con valores reales:
 
-- Nginx frontend: `http directive is not allowed here` por `http {}` en `default.conf`.
-- Proxy `/api`: rutas rotas por `proxy_pass` con `/` final (se ajustó para conservar `/api/...`).
-- GHCR: fallo por namespace en mayúsculas.
-- Runner self-hosted: `permission denied` en `/var/run/docker.sock`.
-- Migración final: retirada de Apache para evitar conflicto con puertos `80/443`.
+```hcl
+environment = "dev"
 
-### Capturas recomendadas
+aws_region       = "eu-west-3"
+ssh_allowed_cidr = "TU_IP_PUBLICA/32"
+ssh_public_key   = "ssh-ed25519 TU_CLAVE_PUBLICA"
 
-- Run en verde de GitHub Actions (build/push + deploy).
-- `docker compose ps` con `gateway`, `frontend`, `api` en `Up`.
-- `curl -I http://<host>` mostrando `301 Location: https://...`.
-- `curl -k https://<host>/api/metrics` devolviendo JSON.
+new_relic_secret_name    = "securenet/newrelic"
+new_relic_license_key    = "TU_NEW_RELIC_LICENSE_KEY"
+new_relic_account_id     = "TU_NEW_RELIC_ACCOUNT_ID"
+new_relic_api_key        = "TU_NEW_RELIC_API_KEY"
+new_relic_region         = "EU"
+metrics_lookback_minutes = 30
+```
+
+`terraform.tfvars` no debe subirse al repositorio.
+
+### Comandos
+
+```bash
+cd terraform
+terraform fmt
+terraform validate
+terraform plan
+terraform apply
+```
+
+Para reconstruir todo desde cero:
+
+```bash
+terraform destroy
+terraform apply
+```
 
 ---
 
-## 🚀 Despliegue del frontend (fase inicial)
+## New Relic
 
-### Local
+New Relic no se configura manualmente en Jenkins.
+
+El flujo actual es:
+
+1. Terraform crea el secreto `securenet/newrelic`.
+2. Terraform crea una version del secreto con las claves reales.
+3. La EC2 `docker-aws` arranca con `docker_app.sh`.
+4. El script instala Docker, AWS CLI, `jq`, Docker Compose y New Relic Infrastructure Agent.
+5. El script crea `/usr/local/bin/securenet-sync-newrelic.sh`.
+6. Ese script lee Secrets Manager.
+7. Genera `/etc/newrelic-infra.yml`.
+8. Genera `/opt/app/.env`.
+9. Reinicia `newrelic-infra`.
+
+Validaciones utiles en `docker-aws`:
+
+```bash
+sudo systemctl status newrelic-infra --no-pager
+sudo journalctl -u newrelic-infra -n 80 --no-pager
+sudo cat /etc/newrelic-infra.yml
+sudo grep -E '^(NEW_RELIC_ACCOUNT_ID|NEW_RELIC_REGION|METRICS_LOOKBACK_MINUTES)=' /opt/app/.env
+```
+
+En los logs, una conexion correcta muestra mensajes como:
+
+```text
+New Relic infrastructure agent is running.
+connect got id
+Integration health check finished with success
+```
+
+---
+
+## Jenkins
+
+Jenkins usa el IAM Role de la EC2 para trabajar con AWS y ECR. No necesita claves de New Relic.
+
+La unica credencial manual necesaria en Jenkins para el pipeline actual es:
+
+```text
+ID: id_jenkins
+Tipo: SSH Username with private key
+Username: ec2-user
+Private key: clave privada que corresponde a ssh_public_key
+```
+
+El `Jenkinsfile` utiliza:
+
+```groovy
+sshagent(credentials: ['id_jenkins'])
+```
+
+Flujo del pipeline:
+
+1. Login en AWS ECR.
+2. Build de imagenes:
+   - `securenet-api`
+   - `securenet-frontend`
+   - `securenet-gateway`
+3. Push a ECR.
+4. Localiza la EC2 `docker-aws`.
+5. Copia `docker-compose.ecr.yml` a `/opt/app/docker-compose.yml`.
+6. Ejecuta `securenet-sync-newrelic.sh` en la EC2 Docker.
+7. Hace login en ECR desde la EC2 Docker.
+8. Ejecuta `docker compose pull`.
+9. Ejecuta `docker compose up -d --remove-orphans`.
+
+---
+
+## Desarrollo Local
+
+Instalar dependencias:
 
 ```bash
 npm install
+```
+
+Arrancar frontend:
+
+```bash
 npm run dev
 ```
 
-### Build de producción
+Arrancar API de metricas:
+
+```bash
+npm run dev:metrics
+```
+
+Arrancar frontend y API juntos:
+
+```bash
+npm run dev:all
+```
+
+Build:
 
 ```bash
 npm run build
 ```
 
-### Publicación en servidor
+Lint:
 
 ```bash
-cp -r dist/* /var/www/...
-```
-
-### VirtualHost SSL (Apache)
-
-Configurar el VirtualHost HTTPS apuntando a `/var/www/...`.
-
-### ProxyPass de `/api` a Node local
-
-```apache
-ProxyPass /api http://127.0.0.1:3001/api
-ProxyPassReverse /api http://127.0.0.1:3001/api
-```
-
-### Recargar Apache
-
-```bash
-sudo systemctl reload apache2
+npm run lint
 ```
 
 ---
 
-## ⚙️ Variables de entorno
+## Docker Local
 
-### Desarrollo (`.env`)
-
-```bash
-VITE_METRICS_API=http://127.0.0.1:3001/api
-```
-
-### Producción (`.env.production`)
+Levantar servicios locales:
 
 ```bash
-VITE_METRICS_API=/api
+docker compose up -d --build
 ```
 
-> En producción no usar `127.0.0.1` desde el frontend del cliente; debe resolverse por proxy en `/api`.
-
----
-
-## 🧪 Verificaciones útiles
-
-### Backend de métricas
+Ver estado:
 
 ```bash
-curl -s http://127.0.0.1:3001/api/health
-curl -s http://127.0.0.1:3001/api/metrics
+docker compose ps
 ```
 
-### Proxy HTTPS
+Ver logs:
 
 ```bash
-curl -k https://127.0.0.1/api/health
-curl -k https://127.0.0.1/api/metrics
+docker compose logs --tail=100
 ```
 
-### Diagnóstico de frontend
+Parar:
 
-- Revisar `DevTools > Network`.
-- Confirmar request a `/api/metrics`.
-- Evitar errores tipo `/api/api/metrics`.
-- Hard refresh (`Ctrl + Shift + R`) tras cada despliegue.
-
----
-
-## 🧯 Incidencias reales resueltas
-
-- `Failed to fetch` por ruta incorrecta o build antiguo en caché.
-- `Unexpected token '<'` al recibir HTML (404) en lugar de JSON.
-- `Mismatching encryption keys` en n8n por clave distinta en volumen/config.
-- Errores de permisos al subir build por SCP.
-- Cálculo de CPU fijo (0 o 100) por parseo incorrecto de labels Netdata.
-
----
-
-## 🏫 Contexto académico
-
-Proyecto desarrollado durante el curso **2025-2026** en:
-
-**IES Gregorio Prieto**  
-Ciclo Formativo de Grado Superior  
-Administración de Sistemas Informáticos en Red (2º ASIR)
-
----
-
-## 👥 Integrantes (Grupo B)
-
-- **Tania Morales**  
-  https://www.linkedin.com/in/tania-morales-sánchez-348615164
-- **Javier Naranjo**  
-  https://www.linkedin.com/in/javier-naranjo-simarro-67325a356
-- **Adrián Delgado**  
-  https://www.linkedin.com/in/adrian-delgado-campos-b025333ab
-- **Martín Labrador**  
-  https://www.instagram.com/_martinlabrador_
-
----
-
-## 🚀 Impacto del proyecto
-
-SecureNet Lab representa una simulación realista de infraestructura empresarial y demuestra capacidad para diseñar, implementar y asegurar entornos de red complejos en un contexto académico-profesional.
-
-Áreas aplicadas:
-
-- Networking
-- Seguridad
-- Sistemas Linux
-- Automatización
-- Despliegue web
-- Observabilidad
-
-Noticia publicada:  
-https://somosdelprieto.com/index.php/2025/11/27/trabajando-en-el-proyecto-securenet-lab/
-
----
-
-## ✅ Estado actual
-
-- Infraestructura segmentada operativa.
-- DMZ aislada con políticas de acceso.
-- Web desplegada con HTTPS.
-- Monitorización en tiempo real funcional.
-- Acceso remoto por VPN.
-- Servicios de automatización desplegados.
-- DHCP con failover en laboratorio.
-- Despliegue Docker con reverse proxy y CI/CD.
-
----
-
-## 📢 Proyecto de innovación
-
-SecureNet Lab integra de forma práctica conocimientos de redes, seguridad, sistemas y despliegue moderno en un entorno académico con enfoque profesional.
-
-**SecureNet Lab - Grupo B - Proyecto de Innovación 2026**
-
----
-
-## 🔧 Configuración para desarrollo local
-
-Este repositorio **no contiene** claves privadas, certificados ni credenciales. Para trabajar localmente:
-
-### 1. Instalar dependencias
 ```bash
-npm install
+docker compose down
 ```
-
-### 2. Configurar variables de entorno
-```bash
-cp .env.example .env
-# Edita .env con tus valores
-```
-
-### 3. Generar certificados SSL para desarrollo
-```bash
-bash scripts/generate-certs.sh
-```
-
-### 4. Configurar Terraform (opcional)
-```bash
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-# Edita terraform.tfvars con tus IDs de cloud
-```
-
-### 5. Instalar protección pre-commit
-```bash
-cp scripts/pre-commit .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
-```
-
-📖 **Más información**: Ver [docs/repository/SECURITY.md](docs/repository/SECURITY.md) y [docs/repository/REPO-STRATEGY.md](docs/repository/REPO-STRATEGY.md)
 
 ---
 
-## 📚 Documentación adicional
+## Seguridad
 
-- **[docs/repository/SETUP-GUIDE.md](docs/repository/SETUP-GUIDE.md)** - 🚀 Guía paso a paso para configurar repos público/privado
-- **[docs/repository/SECURITY.md](docs/repository/SECURITY.md)** - 🔒 Configuración de seguridad y archivos sensibles
-- **[docs/repository/REPO-STRATEGY.md](docs/repository/REPO-STRATEGY.md)** - 📋 Estrategia detallada de repositorios
-- **[docs/README.md](docs/README.md)** - 📚 Índice de documentación del proyecto
+Este repositorio esta pensado para poder ser publico sin exponer informacion privada.
+
+No se deben subir:
+
+- `.env`
+- `terraform.tfvars`
+- `*.tfstate`
+- `*.tfstate.backup`
+- claves privadas `.pem`
+- certificados privados reales
+- bases de datos locales de n8n
+- secretos de New Relic
+- credenciales AWS
+
+Archivos seguros para versionar:
+
+- `terraform.tfvars.example`
+- codigo fuente
+- Dockerfiles
+- scripts sin credenciales
+- configuraciones con placeholders
+
+Antes de subir cambios, revisar:
+
+```bash
+git status --short --ignored
+git diff --cached
+```
 
 ---
 
-## ⚠️ Nota de seguridad
+## Estado Actual
 
-Este repo es **público** y contiene solo código fuente limpio. NO contiene:
-- Claves privadas (`.pem`, `.key`)
-- Certificados SSL reales
-- Variables de entorno con credenciales (`.env`)
-- Configuraciones de infraestructura con IDs reales (`terraform.tfvars`)
-- Estado de Terraform (`*.tfstate`)
+- Infraestructura AWS reproducible con Terraform.
+- Despliegue Docker preparado para ECR.
+- Jenkins integrado con ECR y despliegue remoto.
+- New Relic configurado desde Secrets Manager.
+- EC2 Docker capaz de autoconfigurarse tras `terraform apply`.
+- `terraform destroy` + `terraform apply` probado correctamente.
+- `terraform plan` final sin cambios tras la reconstruccion.
 
-Para deploy o desarrollo, configura estos archivos localmente usando las plantillas `.example`.
+---
+
+## Autor
+
+**Javier Naranjo**
+
+Proyecto personal de infraestructura, cloud, CI/CD, observabilidad y desarrollo web.
